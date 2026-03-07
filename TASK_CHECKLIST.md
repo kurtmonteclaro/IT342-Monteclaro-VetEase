@@ -17,7 +17,7 @@ Scope: **Only Registration and Login**
 
 ## 3. Environment and Database Connection
 - [x] Configure backend datasource for Supabase PostgreSQL via environment variables
-- [x] Add root `.env` template
+- [x] Add root `.env.local` local-only configuration
 - [x] Configure frontend API base URL through env variable
 
 ## 4. Documentation and Project Hygiene

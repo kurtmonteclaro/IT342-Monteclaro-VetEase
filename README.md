@@ -73,15 +73,17 @@ Success response (`200`):
 ```
 
 ## Environment Setup
-Create/edit root `.env` (already added in this repo) with your Supabase values:
+Create/edit root `.env.local` (not committed to git) with your Supabase values:
 
 ```env
-SUPABASE_DB_URL=jdbc:postgresql://db.<your-project-ref>.supabase.co:5432/postgres?sslmode=require
-SUPABASE_DB_USER=postgres
+SUPABASE_DB_URL=jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
+SUPABASE_DB_USER=postgres.kxqdzuvdspvlpzjkgxvt
 SUPABASE_DB_PASSWORD=your-supabase-db-password
 SERVER_PORT=8080
 VITE_API_BASE_URL=http://localhost:8080
 ```
+
+The VS Code run configuration reads values from `.env.local` via `.vscode/launch.json`.
 
 ## Run Instructions
 ### 1. Backend
