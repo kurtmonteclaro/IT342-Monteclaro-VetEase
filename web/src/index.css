@@ -1,16 +1,25 @@
 :root {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #ecf9ff;
-  background: #081c28;
+  color: #18312a;
+  background: #dbe5db;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --page-deep: #123731;
+  --page-mid: #2f6558;
+  --page-soft: #dfe9da;
+  --page-warm: #efe7d7;
 }
 
 * {
+  box-sizing: border-box;
+}
+
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -19,7 +28,29 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 10% 20%, rgba(29, 119, 146, 0.45), transparent 35%),
-    radial-gradient(circle at 90% 15%, rgba(73, 169, 179, 0.35), transparent 30%),
-    linear-gradient(140deg, #081c28, #103347 50%, #0b2635);
+    radial-gradient(circle at top left, rgba(239, 247, 221, 0.9), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(121, 165, 144, 0.24), transparent 24%),
+    radial-gradient(circle at 20% 80%, rgba(61, 103, 86, 0.22), transparent 24%),
+    linear-gradient(135deg, var(--page-soft), #cad7c8 48%, var(--page-warm));
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), transparent 70%);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input {
+  font: inherit;
 }
