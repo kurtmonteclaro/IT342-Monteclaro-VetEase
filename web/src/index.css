@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Outfit:wght@400;500;600;700;800&display=swap');
+
 :root {
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #18312a;
@@ -28,10 +30,10 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(239, 247, 221, 0.9), transparent 28%),
-    radial-gradient(circle at 85% 18%, rgba(121, 165, 144, 0.24), transparent 24%),
-    radial-gradient(circle at 20% 80%, rgba(61, 103, 86, 0.22), transparent 24%),
-    linear-gradient(135deg, var(--page-soft), #cad7c8 48%, var(--page-warm));
+    radial-gradient(circle at 8% 12%, rgba(255, 217, 152, 0.28), transparent 24%),
+    radial-gradient(circle at 85% 18%, rgba(121, 165, 144, 0.24), transparent 26%),
+    radial-gradient(circle at 22% 82%, rgba(61, 103, 86, 0.22), transparent 25%),
+    linear-gradient(135deg, #dbe7d9, #ccd7c9 50%, #efe1c9);
 }
 
 body::before {

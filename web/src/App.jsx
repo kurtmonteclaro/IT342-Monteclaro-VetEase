@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { AdminTitleStrip, AuthForms, NavButtons, WorkspaceView } from './components/AppSections'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
@@ -41,18 +43,43 @@ const INITIAL_SETTINGS_FORM = {
   slotMinutes: 30,
 }
 
+const NAVIGATION_CONFIG = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'pets', label: 'Pets' },
+  { key: 'services', label: 'Services' },
+  { key: 'book', label: 'Book' },
+  { key: 'appointments', label: 'Appointments' },
+  { key: 'admin', label: 'Admin' },
+]
+
+const VIEW_TO_PATH = {
+  dashboard: '/dashboard',
+  pets: '/pets',
+  services: '/services',
+  book: '/book',
+  appointments: '/appointments',
+  admin: '/admin',
+}
+
+const PATH_TO_VIEW = {
+  '/dashboard': 'dashboard',
+  '/pets': 'pets',
+  '/services': 'services',
+  '/book': 'book',
+  '/appointments': 'appointments',
+  '/admin': 'admin',
+}
+
 function App() {
-  const [mode, setMode] = useState('login')
   const [registerForm, setRegisterForm] = useState(INITIAL_REGISTER_FORM)
   const [loginForm, setLoginForm] = useState(INITIAL_LOGIN_FORM)
   const [session, setSession] = useState(() => {
     try {
-      return JSON.parse(window.localStorage.getItem(SESSION_KEY) || 'null')
+      return JSON.parse(globalThis.localStorage.getItem(SESSION_KEY) || 'null')
     } catch {
       return null
     }
   })
-  const [activeView, setActiveView] = useState('dashboard')
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -70,12 +97,32 @@ function App() {
   const [blockedDates, setBlockedDates] = useState([])
   const [blockedDateInput, setBlockedDateInput] = useState('')
 
+  const location = useLocation()
+  const navigate = useNavigate()
+  const pathname = location.pathname.toLowerCase()
+
   const currentUser = session?.user || null
   const token = session?.token || ''
+  const isAdmin = currentUser?.role === 'ADMIN'
+  const mode = pathname === '/register' ? 'register' : 'login'
+  const activeView = PATH_TO_VIEW[pathname] || 'dashboard'
 
   const nextAppointment = useMemo(
     () => appointments.find((appointment) => ['PENDING', 'CONFIRMED'].includes(appointment.status)) || null,
     [appointments],
+  )
+
+  const navigationItems = useMemo(() => {
+    if (!currentUser) {
+      return []
+    }
+
+    return NAVIGATION_CONFIG.filter((item) => isAdmin || item.key !== 'admin')
+  }, [currentUser, isAdmin])
+
+  const activeNavigation = useMemo(
+    () => navigationItems.find((item) => item.key === activeView) || null,
+    [activeView, navigationItems],
   )
 
   const title = useMemo(() => {
@@ -114,6 +161,17 @@ function App() {
     return labels[activeView] || 'Your clinic workspace is ready.'
   }, [activeView, currentUser, mode])
 
+  const panelKicker = currentUser ? 'Workspace' : (mode === 'login' ? 'Login' : 'Register')
+  const shellClassName = currentUser ? `shell ${isAdmin ? 'shell-admin' : 'shell-client'}` : 'shell'
+
+  const navigateToView = (view) => {
+    navigate(VIEW_TO_PATH[view] || '/dashboard')
+  }
+
+  const navigateToMode = (nextMode) => {
+    navigate(nextMode === 'register' ? '/register' : '/login')
+  }
+
   useEffect(() => {
     void loadServices()
   }, [])
@@ -135,6 +193,32 @@ function App() {
     void loadAvailability(bookingForm.date, bookingForm.serviceId)
   }, [bookingForm.date, bookingForm.serviceId])
 
+  useEffect(() => {
+    const isAuthPath = pathname === '/login' || pathname === '/register'
+    const isWorkspacePath = Boolean(PATH_TO_VIEW[pathname])
+
+    if (!currentUser) {
+      if (!isAuthPath) {
+        navigate('/login', { replace: true })
+      }
+      return
+    }
+
+    if (isAuthPath || pathname === '/') {
+      navigate('/dashboard', { replace: true })
+      return
+    }
+
+    if (!isWorkspacePath) {
+      navigate('/dashboard', { replace: true })
+      return
+    }
+
+    if (pathname === '/admin' && !isAdmin) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [currentUser, isAdmin, navigate, pathname])
+
   const clearAlerts = () => {
     setErrorMessage('')
     setSuccessMessage('')
@@ -150,13 +234,15 @@ function App() {
   }
 
   const fetchJson = async (path, options = {}, withAuth = true) => {
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      ...(withAuth && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    }
+
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(withAuth && token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {}),
-      },
+      headers: requestHeaders,
     })
 
     if (response.status === 204) {
@@ -228,8 +314,8 @@ function App() {
     }
 
     setSession(nextSession)
-    window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
-    setActiveView(payload.user.role === 'ADMIN' ? 'admin' : 'dashboard')
+    globalThis.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
+    navigate('/dashboard', { replace: true })
   }
 
   const submitRegister = async (event) => {
@@ -275,7 +361,7 @@ function App() {
   }
 
   const logout = () => {
-    window.localStorage.removeItem(SESSION_KEY)
+    globalThis.localStorage.removeItem(SESSION_KEY)
     setSession(null)
     setPets([])
     setAppointments([])
@@ -284,7 +370,7 @@ function App() {
     setPetForm(INITIAL_PET_FORM)
     setBookingForm(INITIAL_BOOKING_FORM)
     setEditingPetId(null)
-    setMode('login')
+    navigate('/login', { replace: true })
     clearAlerts()
   }
 
@@ -320,7 +406,7 @@ function App() {
       notes: pet.notes ?? '',
       vaccineHistory: pet.vaccineHistory ?? '',
     })
-    setActiveView('pets')
+    navigateToView('pets')
   }
 
   const deletePet = async (petId) => {
@@ -359,7 +445,7 @@ function App() {
       setAvailableSlots([])
       setSuccessMessage('Appointment request submitted as pending.')
       await refreshAuthenticatedData(currentUser.role === 'ADMIN')
-      setActiveView('appointments')
+      navigateToView('appointments')
     } catch (error) {
       setErrorMessage(error.message)
     }
@@ -438,319 +524,10 @@ function App() {
     }
   }
 
-  const navigationItems = [
-    { key: 'dashboard', label: 'Dashboard' },
-    { key: 'pets', label: 'Pets' },
-    { key: 'services', label: 'Services' },
-    { key: 'book', label: 'Book' },
-    { key: 'appointments', label: 'Appointments' },
-    ...(currentUser?.role === 'ADMIN' ? [{ key: 'admin', label: 'Admin' }] : []),
-  ]
-
-  const renderAuthForm = () => {
-    if (mode === 'register') {
-      return (
-        <form className="form" onSubmit={submitRegister}>
-          <label htmlFor="registerUsername">Username</label>
-          <input id="registerUsername" type="text" placeholder="Choose a username" value={registerForm.username} onChange={(event) => setRegisterForm((previous) => ({ ...previous, username: event.target.value }))} required />
-
-          <div className="form-split">
-            <div>
-              <label htmlFor="registerFirstName">First Name</label>
-              <input id="registerFirstName" type="text" placeholder="First name" value={registerForm.firstName} onChange={(event) => setRegisterForm((previous) => ({ ...previous, firstName: event.target.value }))} required />
-            </div>
-            <div>
-              <label htmlFor="registerLastName">Last Name</label>
-              <input id="registerLastName" type="text" placeholder="Last name" value={registerForm.lastName} onChange={(event) => setRegisterForm((previous) => ({ ...previous, lastName: event.target.value }))} required />
-            </div>
-          </div>
-
-          <label htmlFor="registerEmail">Email Address</label>
-          <input id="registerEmail" type="email" placeholder="you@example.com" value={registerForm.email} onChange={(event) => setRegisterForm((previous) => ({ ...previous, email: event.target.value }))} required />
-
-          <label htmlFor="registerPassword">Password</label>
-          <input id="registerPassword" type="password" minLength={8} placeholder="Minimum 8 characters" value={registerForm.password} onChange={(event) => setRegisterForm((previous) => ({ ...previous, password: event.target.value }))} required />
-
-          <label htmlFor="registerRole">Role</label>
-          <select id="registerRole" value={registerForm.role} onChange={(event) => setRegisterForm((previous) => ({ ...previous, role: event.target.value }))}>
-            <option value="CLIENT">CLIENT</option>
-            <option value="ADMIN">ADMIN</option>
-          </select>
-
-          <button type="submit" disabled={loading}>{loading ? 'Creating Account...' : 'Create Account'}</button>
-        </form>
-      )
-    }
-
-    return (
-      <form className="form" onSubmit={submitLogin}>
-        <label htmlFor="loginUsername">Username</label>
-        <input id="loginUsername" type="text" placeholder="Enter your username" value={loginForm.username} onChange={(event) => setLoginForm((previous) => ({ ...previous, username: event.target.value }))} required />
-
-        <label htmlFor="loginPassword">Password</label>
-        <input id="loginPassword" type="password" placeholder="Enter your password" value={loginForm.password} onChange={(event) => setLoginForm((previous) => ({ ...previous, password: event.target.value }))} required />
-
-        <button type="submit" disabled={loading}>{loading ? 'Signing In...' : 'Login to VetEase'}</button>
-      </form>
-    )
-  }
-
-  const renderWorkspace = () => {
-    if (activeView === 'dashboard') {
-      return (
-        <div className="workspace-grid">
-          <article className="surface-card">
-            <span className="surface-kicker">Account</span>
-            <strong>{currentUser.firstName} {currentUser.lastName}</strong>
-            <p>@{currentUser.username}</p>
-            <p>{currentUser.email}</p>
-            <p>Role: {currentUser.role}</p>
-          </article>
-
-          <article className="surface-card">
-            <span className="surface-kicker">Next Appointment</span>
-            {nextAppointment ? (
-              <>
-                <strong>{nextAppointment.service.name}</strong>
-                <p>{nextAppointment.pet.name}</p>
-                <p>{nextAppointment.date} at {String(nextAppointment.time).slice(0, 5)}</p>
-                <span className={`status-badge ${nextAppointment.status.toLowerCase()}`}>{nextAppointment.status}</span>
-              </>
-            ) : (
-              <p>No upcoming appointments yet.</p>
-            )}
-          </article>
-
-          <article className="surface-card">
-            <span className="surface-kicker">Quick Snapshot</span>
-            <strong>{pets.length} Pets</strong>
-            <p>{appointments.length} Appointments tracked</p>
-            {currentUser.role === 'ADMIN' ? <p>{pendingAppointments.length} Pending admin requests</p> : null}
-          </article>
-        </div>
-      )
-    }
-
-    if (activeView === 'pets') {
-      return (
-        <div className="workspace-grid workspace-grid-wide">
-          <article className="surface-card">
-            <span className="surface-kicker">{editingPetId ? 'Edit Pet' : 'Add Pet'}</span>
-            <form className="form" onSubmit={submitPet}>
-              <label htmlFor="petName">Name</label>
-              <input id="petName" value={petForm.name} onChange={(event) => setPetForm((previous) => ({ ...previous, name: event.target.value }))} required />
-
-              <div className="form-split">
-                <div>
-                  <label htmlFor="petSpecies">Species</label>
-                  <input id="petSpecies" value={petForm.species} onChange={(event) => setPetForm((previous) => ({ ...previous, species: event.target.value }))} required />
-                </div>
-                <div>
-                  <label htmlFor="petBreed">Breed</label>
-                  <input id="petBreed" value={petForm.breed} onChange={(event) => setPetForm((previous) => ({ ...previous, breed: event.target.value }))} required />
-                </div>
-              </div>
-
-              <label htmlFor="petAge">Age</label>
-              <input id="petAge" type="number" min="0" value={petForm.age} onChange={(event) => setPetForm((previous) => ({ ...previous, age: event.target.value }))} />
-
-              <label htmlFor="petNotes">Notes</label>
-              <textarea id="petNotes" value={petForm.notes} onChange={(event) => setPetForm((previous) => ({ ...previous, notes: event.target.value }))} />
-
-              <label htmlFor="petVaccineHistory">Vaccine History</label>
-              <textarea id="petVaccineHistory" value={petForm.vaccineHistory} onChange={(event) => setPetForm((previous) => ({ ...previous, vaccineHistory: event.target.value }))} />
-
-              <div className="action-row">
-                <button type="submit">{editingPetId ? 'Update Pet' : 'Save Pet'}</button>
-                {editingPetId ? <button type="button" className="secondary-button" onClick={() => { setEditingPetId(null); setPetForm(INITIAL_PET_FORM) }}>Cancel</button> : null}
-              </div>
-            </form>
-          </article>
-
-          <article className="surface-card">
-            <span className="surface-kicker">Your Pets</span>
-            <div className="stack-list">
-              {pets.length === 0 ? <p>No pets yet.</p> : null}
-              {pets.map((pet) => (
-                <div key={pet.id} className="list-row">
-                  <div>
-                    <strong>{pet.name}</strong>
-                    <p>{pet.species} - {pet.breed}</p>
-                  </div>
-                  <div className="action-row compact">
-                    <button type="button" className="secondary-button" onClick={() => editPet(pet)}>Edit</button>
-                    <button type="button" className="danger-button" onClick={() => void deletePet(pet.id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-        </div>
-      )
-    }
-
-    if (activeView === 'services') {
-      return (
-        <div className="workspace-grid">
-          {services.map((service) => (
-            <article key={service.id} className="surface-card">
-              <span className="surface-kicker">Service</span>
-              <strong>{service.name}</strong>
-              <p>{service.description}</p>
-              <span className="status-badge neutral">{service.durationMinutes} min</span>
-            </article>
-          ))}
-        </div>
-      )
-    }
-
-    if (activeView === 'book') {
-      return (
-        <article className="surface-card">
-          <span className="surface-kicker">New Booking</span>
-          <form className="form" onSubmit={submitBooking}>
-            <label htmlFor="bookingPet">Pet</label>
-            <select id="bookingPet" value={bookingForm.petId} onChange={(event) => setBookingForm((previous) => ({ ...previous, petId: event.target.value }))} required>
-              <option value="">Select pet</option>
-              {pets.map((pet) => <option key={pet.id} value={pet.id}>{pet.name}</option>)}
-            </select>
-
-            <label htmlFor="bookingService">Service</label>
-            <select id="bookingService" value={bookingForm.serviceId} onChange={(event) => setBookingForm((previous) => ({ ...previous, serviceId: event.target.value, time: '' }))} required>
-              <option value="">Select service</option>
-              {services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
-            </select>
-
-            <label htmlFor="bookingDate">Date</label>
-            <input id="bookingDate" type="date" value={bookingForm.date} onChange={(event) => setBookingForm((previous) => ({ ...previous, date: event.target.value, time: '' }))} required />
-
-            <div>
-              <label>Available Slots</label>
-              <div className="slot-grid">
-                {availableSlots.length === 0 ? <p className="slot-empty">Choose a service and date to see slots.</p> : null}
-                {availableSlots.map((slot) => {
-                  const value = String(slot)
-                  return <button key={value} type="button" className={`slot-button ${bookingForm.time === value ? 'active' : ''}`} onClick={() => setBookingForm((previous) => ({ ...previous, time: value }))}>{value.slice(0, 5)}</button>
-                })}
-              </div>
-            </div>
-
-            <label htmlFor="bookingNotes">Notes</label>
-            <textarea id="bookingNotes" value={bookingForm.notes} onChange={(event) => setBookingForm((previous) => ({ ...previous, notes: event.target.value }))} />
-
-            <button type="submit">Submit Booking</button>
-          </form>
-        </article>
-      )
-    }
-
-    if (activeView === 'appointments') {
-      return (
-        <article className="surface-card">
-          <span className="surface-kicker">My Appointments</span>
-          <div className="stack-list">
-            {appointments.length === 0 ? <p>No appointments yet.</p> : null}
-            {appointments.map((appointment) => (
-              <div key={appointment.id} className="list-row">
-                <div>
-                  <strong>{appointment.service.name} - {appointment.pet.name}</strong>
-                  <p>{appointment.date} at {String(appointment.time).slice(0, 5)}</p>
-                  <span className={`status-badge ${appointment.status.toLowerCase()}`}>{appointment.status}</span>
-                </div>
-                {!['COMPLETED', 'CANCELLED'].includes(appointment.status) ? <button type="button" className="danger-button" onClick={() => void cancelAppointment(appointment.id)}>Cancel</button> : null}
-              </div>
-            ))}
-          </div>
-        </article>
-      )
-    }
-
-    if (activeView === 'admin') {
-      return (
-        <div className="workspace-grid workspace-grid-wide">
-          <article className="surface-card">
-            <span className="surface-kicker">Pending Bookings</span>
-            <div className="stack-list">
-              {pendingAppointments.length === 0 ? <p>No pending requests.</p> : null}
-              {pendingAppointments.map((appointment) => (
-                <div key={appointment.id} className="list-row">
-                  <div>
-                    <strong>{appointment.service.name}</strong>
-                    <p>{appointment.date} at {String(appointment.time).slice(0, 5)} - {appointment.client.firstName} {appointment.client.lastName}</p>
-                  </div>
-                  <div className="action-row compact">
-                    <button type="button" onClick={() => void runAdminAction(appointment.id, 'confirm', 'Appointment accepted.')}>Accept</button>
-                    <button type="button" className="danger-button" onClick={() => void cancelAppointment(appointment.id, true)}>Decline</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="surface-card">
-            <span className="surface-kicker">Today</span>
-            <div className="stack-list">
-              {todayAppointments.length === 0 ? <p>No appointments for today.</p> : null}
-              {todayAppointments.map((appointment) => (
-                <div key={appointment.id} className="list-row">
-                  <div>
-                    <strong>{appointment.service.name}</strong>
-                    <p>{String(appointment.time).slice(0, 5)} - {appointment.pet.name}</p>
-                  </div>
-                  <div className="action-row compact">
-                    {appointment.status === 'CONFIRMED' ? <button type="button" onClick={() => void runAdminAction(appointment.id, 'complete', 'Appointment completed.')}>Complete</button> : null}
-                    {!['COMPLETED', 'CANCELLED'].includes(appointment.status) ? <button type="button" className="danger-button" onClick={() => void cancelAppointment(appointment.id, true)}>Cancel</button> : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="surface-card">
-            <span className="surface-kicker">Clinic Settings</span>
-            <form className="form" onSubmit={saveSettings}>
-              <label htmlFor="openingTime">Opening Time</label>
-              <input id="openingTime" type="time" value={settingsForm.openingTime} onChange={(event) => setSettingsForm((previous) => ({ ...previous, openingTime: event.target.value }))} />
-
-              <label htmlFor="closingTime">Closing Time</label>
-              <input id="closingTime" type="time" value={settingsForm.closingTime} onChange={(event) => setSettingsForm((previous) => ({ ...previous, closingTime: event.target.value }))} />
-
-              <label htmlFor="slotMinutes">Slot Minutes</label>
-              <input id="slotMinutes" type="number" min="5" value={settingsForm.slotMinutes} onChange={(event) => setSettingsForm((previous) => ({ ...previous, slotMinutes: event.target.value }))} />
-
-              <button type="submit">Save Settings</button>
-            </form>
-          </article>
-
-          <article className="surface-card">
-            <span className="surface-kicker">Blocked Dates</span>
-            <form className="form" onSubmit={addBlockedDate}>
-              <label htmlFor="blockedDate">Date</label>
-              <input id="blockedDate" type="date" value={blockedDateInput} onChange={(event) => setBlockedDateInput(event.target.value)} required />
-              <button type="submit">Block Date</button>
-            </form>
-
-            <div className="stack-list top-gap">
-              {blockedDates.length === 0 ? <p>No blocked dates.</p> : null}
-              {blockedDates.map((blockedDate) => (
-                <div key={blockedDate.id} className="list-row">
-                  <span>{blockedDate.date}</span>
-                  <button type="button" className="danger-button" onClick={() => void removeBlockedDate(blockedDate.id)}>Remove</button>
-                </div>
-              ))}
-            </div>
-          </article>
-        </div>
-      )
-    }
-
-    return null
-  }
-
   return (
-    <main className="screen">
-      <section className="shell">
-        <aside className="brand-panel">
+    <main className={currentUser ? 'screen screen-authenticated' : 'screen'}>
+      <section className={shellClassName}>
+        <aside className={currentUser && isAdmin ? 'brand-panel admin-sidebar' : 'brand-panel'}>
           <div className="brand-mark" aria-hidden="true">
             <span className="brand-mark-core">+</span>
           </div>
@@ -767,6 +544,24 @@ function App() {
               <article className="info-card"><span className="info-kicker">For Clinics</span><p>Organized sign-ins and cleaner reservation flow for the daily schedule.</p></article>
               <article className="info-card info-card-wide"><span className="info-kicker">Core Features</span><p>Pets, bookings, appointment review, and admin approval in one workspace.</p></article>
             </div>
+          ) : isAdmin ? (
+            <div className="workspace-nav admin-nav-wrap">
+              <div className="workspace-user">
+                <span className="info-kicker">Admin Session</span>
+                <strong>{currentUser.firstName} {currentUser.lastName}</strong>
+                <p>@{currentUser.username}</p>
+                <p>{currentUser.email}</p>
+              </div>
+
+              <NavButtons items={navigationItems} activeView={activeView} onChange={navigateToView} className="side-nav" />
+
+              <article className="info-card info-card-wide">
+                <span className="info-kicker">At A Glance</span>
+                <p>{pendingAppointments.length} pending reviews and {todayAppointments.length} appointments today.</p>
+              </article>
+
+              <button type="button" className="logout-button" onClick={logout}>Logout</button>
+            </div>
           ) : (
             <div className="workspace-nav">
               <div className="workspace-user">
@@ -776,11 +571,10 @@ function App() {
                 <p>{currentUser.role}</p>
               </div>
 
-              <div className="nav-pills">
-                {navigationItems.map((item) => (
-                  <button key={item.key} type="button" className={activeView === item.key ? 'nav-pill active' : 'nav-pill'} onClick={() => setActiveView(item.key)}>{item.label}</button>
-                ))}
-              </div>
+              <article className="info-card info-card-wide">
+                <span className="info-kicker">Your Journey</span>
+                <p>Keep your pets updated and make bookings from a focused, distraction-free workspace.</p>
+              </article>
 
               <button type="button" className="logout-button" onClick={logout}>Logout</button>
             </div>
@@ -789,10 +583,18 @@ function App() {
 
         <section className="panel">
           <div className="panel-header">
-            <p className="panel-kicker">{currentUser ? 'Workspace' : mode === 'login' ? 'Login' : 'Register'}</p>
+            <p className="panel-kicker">{panelKicker}</p>
             <h2>{title}</h2>
             <p className="panel-copy">{subtitle}</p>
           </div>
+
+          {isAdmin && currentUser ? (
+            <AdminTitleStrip
+              activeLabel={activeNavigation?.label || 'Dashboard'}
+              pendingCount={pendingAppointments.length}
+              todayCount={todayAppointments.length}
+            />
+          ) : null}
 
           {errorMessage ? <p className="alert alert-error">{errorMessage}</p> : null}
           {successMessage ? <p className="alert alert-success">{successMessage}</p> : null}
@@ -800,13 +602,58 @@ function App() {
           {!currentUser ? (
             <>
               <div className="mode-switch" role="tablist" aria-label="Authentication Mode">
-                <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => { clearAlerts(); setMode('login') }}>Login</button>
-                <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => { clearAlerts(); setMode('register') }}>Register</button>
+                <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => { clearAlerts(); navigateToMode('login') }}>Login</button>
+                <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => { clearAlerts(); navigateToMode('register') }}>Register</button>
               </div>
-              {renderAuthForm()}
+              <AuthForms
+                mode={mode}
+                loading={loading}
+                registerForm={registerForm}
+                setRegisterForm={setRegisterForm}
+                loginForm={loginForm}
+                setLoginForm={setLoginForm}
+                submitRegister={submitRegister}
+                submitLogin={submitLogin}
+              />
             </>
           ) : (
-            <div className="workspace-body">{renderWorkspace()}</div>
+            <>
+              {!isAdmin ? <NavButtons items={navigationItems} activeView={activeView} onChange={navigateToView} className="client-top-nav" /> : null}
+              <div className="workspace-body">
+                <WorkspaceView
+                  activeView={activeView}
+                  currentUser={currentUser}
+                  pets={pets}
+                  appointments={appointments}
+                  nextAppointment={nextAppointment}
+                  pendingAppointments={pendingAppointments}
+                  services={services}
+                  petForm={petForm}
+                  setPetForm={setPetForm}
+                  editingPetId={editingPetId}
+                  submitPet={submitPet}
+                  setEditingPetId={setEditingPetId}
+                  setPetFormToInitial={() => setPetForm(INITIAL_PET_FORM)}
+                  editPet={editPet}
+                  deletePet={deletePet}
+                  bookingForm={bookingForm}
+                  setBookingForm={setBookingForm}
+                  availableSlots={availableSlots}
+                  submitBooking={submitBooking}
+                  cancelAppointment={cancelAppointment}
+                  todayAppointments={todayAppointments}
+                  runAdminAction={runAdminAction}
+                  settingsForm={settingsForm}
+                  setSettingsForm={setSettingsForm}
+                  saveSettings={saveSettings}
+                  blockedDateInput={blockedDateInput}
+                  setBlockedDateInput={setBlockedDateInput}
+                  addBlockedDate={addBlockedDate}
+                  blockedDates={blockedDates}
+                  removeBlockedDate={removeBlockedDate}
+                />
+              </div>
+            </>
           )}
         </section>
       </section>
