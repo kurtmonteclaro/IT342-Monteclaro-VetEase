@@ -70,6 +70,16 @@ const PATH_TO_VIEW = {
   '/admin': 'admin',
 }
 
+const CLIENT_ONLY_PATHS = ['/pets', '/services', '/book', '/appointments']
+
+function todayLocalDateString() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function App() {
   const [registerForm, setRegisterForm] = useState(INITIAL_REGISTER_FORM)
   const [loginForm, setLoginForm] = useState(INITIAL_LOGIN_FORM)
@@ -117,7 +127,14 @@ function App() {
       return []
     }
 
-    return NAVIGATION_CONFIG.filter((item) => isAdmin || item.key !== 'admin')
+    if (isAdmin) {
+      return [
+        { key: 'dashboard', label: 'Dashboard' },
+        { key: 'admin', label: 'Admin' },
+      ]
+    }
+
+    return NAVIGATION_CONFIG.filter((item) => item.key !== 'admin')
   }, [currentUser, isAdmin])
 
   const activeNavigation = useMemo(
@@ -130,6 +147,14 @@ function App() {
       return mode === 'login' ? 'Welcome Back' : 'Create Your Portal'
     }
 
+    if (isAdmin) {
+      const adminLabels = {
+        dashboard: 'Clinic Overview',
+        admin: 'Admin Control Center',
+      }
+      return adminLabels[activeView] || 'VetEase'
+    }
+
     const labels = {
       dashboard: 'Clinic Access Granted',
       pets: 'Pet Profiles',
@@ -140,13 +165,21 @@ function App() {
     }
 
     return labels[activeView] || 'VetEase'
-  }, [activeView, currentUser, mode])
+  }, [activeView, currentUser, mode, isAdmin])
 
   const subtitle = useMemo(() => {
     if (!currentUser) {
       return mode === 'login'
         ? 'Sign in to manage reservations, pet owner records, and daily clinic flow.'
         : 'Set up a secure account for a smoother appointment and patient experience.'
+    }
+
+    if (isAdmin) {
+      const adminLabels = {
+        dashboard: 'Pending requests, today\'s schedule, and clinic settings in one place.',
+        admin: 'Approve requests, monitor today\'s queue, and manage schedule settings.',
+      }
+      return adminLabels[activeView] || 'Your clinic workspace is ready.'
     }
 
     const labels = {
@@ -159,7 +192,7 @@ function App() {
     }
 
     return labels[activeView] || 'Your clinic workspace is ready.'
-  }, [activeView, currentUser, mode])
+  }, [activeView, currentUser, mode, isAdmin])
 
   const panelKicker = currentUser ? 'Workspace' : (mode === 'login' ? 'Login' : 'Register')
   const shellClassName = currentUser ? `shell ${isAdmin ? 'shell-admin' : 'shell-client'}` : 'shell'
@@ -190,6 +223,11 @@ function App() {
       return
     }
 
+    if (bookingForm.date < todayLocalDateString()) {
+      setAvailableSlots([])
+      return
+    }
+
     void loadAvailability(bookingForm.date, bookingForm.serviceId)
   }, [bookingForm.date, bookingForm.serviceId])
 
@@ -216,6 +254,11 @@ function App() {
 
     if (pathname === '/admin' && !isAdmin) {
       navigate('/dashboard', { replace: true })
+      return
+    }
+
+    if (isAdmin && CLIENT_ONLY_PATHS.includes(pathname)) {
+      navigate('/admin', { replace: true })
     }
   }, [currentUser, isAdmin, navigate, pathname])
 
@@ -277,14 +320,6 @@ function App() {
 
   const refreshAuthenticatedData = async (includeAdminData) => {
     try {
-      const [petPayload, appointmentPayload] = await Promise.all([
-        fetchJson('/api/pets'),
-        fetchJson('/api/appointments/mine'),
-      ])
-
-      setPets(petPayload || [])
-      setAppointments(appointmentPayload || [])
-
       if (includeAdminData) {
         const [pendingPayload, todayPayload, settingsPayload, blockedPayload] = await Promise.all([
           fetchJson('/api/admin/appointments/pending'),
@@ -301,7 +336,18 @@ function App() {
           slotMinutes: settingsPayload?.slotMinutes || 30,
         })
         setBlockedDates(blockedPayload || [])
+        setPets([])
+        setAppointments([])
+        return
       }
+
+      const [petPayload, appointmentPayload] = await Promise.all([
+        fetchJson('/api/pets'),
+        fetchJson('/api/appointments/mine'),
+      ])
+
+      setPets(petPayload || [])
+      setAppointments(appointmentPayload || [])
     } catch (error) {
       setErrorMessage(error.message)
     }
@@ -315,7 +361,7 @@ function App() {
 
     setSession(nextSession)
     globalThis.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
-    navigate('/dashboard', { replace: true })
+    navigate(payload.user?.role === 'ADMIN' ? '/admin' : '/dashboard', { replace: true })
   }
 
   const submitRegister = async (event) => {
@@ -429,6 +475,22 @@ function App() {
     event.preventDefault()
     clearAlerts()
 
+    const today = todayLocalDateString()
+    if (!bookingForm.date || bookingForm.date < today) {
+      setErrorMessage('Choose today or a future date. Past dates cannot be booked.')
+      return
+    }
+    if (bookingForm.date === today && bookingForm.time) {
+      const slotTime = String(bookingForm.time).slice(0, 5)
+      const now = new Date()
+      const [h, m] = slotTime.split(':').map(Number)
+      const slotDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0)
+      if (slotDate < now) {
+        setErrorMessage('That time has already passed. Pick another slot.')
+        return
+      }
+    }
+
     try {
       await fetchJson('/api/appointments', {
         method: 'POST',
@@ -527,21 +589,42 @@ function App() {
   return (
     <main className={currentUser ? 'screen screen-authenticated' : 'screen'}>
       <section className={shellClassName}>
+        <div className="shell-orb shell-orb-one" aria-hidden="true" />
+        <div className="shell-orb shell-orb-two" aria-hidden="true" />
         <aside className={currentUser && isAdmin ? 'brand-panel admin-sidebar' : 'brand-panel'}>
           <div className="brand-mark" aria-hidden="true">
             <span className="brand-mark-core">+</span>
           </div>
 
-          <div>
-            <p className="eyebrow">Veterinary Reservation Platform</p>
-            <h1 className="brand-title">VetEase</h1>
-            <p className="brand-copy">A calmer digital front desk for pet owners and clinic staff, designed to make registration, login, and appointment coordination feel clear and trustworthy.</p>
-          </div>
+          {currentUser ? (
+            <div className="brand-hero brand-hero-session">
+              <p className="eyebrow">Veterinary Reservation Platform</p>
+              <h1 className="brand-title">VetEase</h1>
+              <p className="brand-copy">A calmer digital front desk for pet owners and clinic staff, designed to make registration, login, and appointment coordination feel clear and trustworthy.</p>
+            </div>
+          ) : null}
 
           {!currentUser ? (
-            <div className="brand-grid">
-              <article className="info-card"><span className="info-kicker">For Pet Owners</span><p>Simple access to booking details, account records, and future appointments.</p></article>
-              <article className="info-card"><span className="info-kicker">For Clinics</span><p>Organized sign-ins and cleaner reservation flow for the daily schedule.</p></article>
+            <div className="brand-landing">
+              <div className="brand-hero">
+                <p className="eyebrow">Veterinary Reservation Platform</p>
+                <h1 className="brand-title">VetEase</h1>
+                <p className="brand-copy">A calmer digital front desk for pet owners and clinic staff, designed to make registration, login, and appointment coordination feel clear and trustworthy.</p>
+                <div className="brand-metrics" aria-label="Platform Highlights">
+                  <article className="metric-card">
+                    <span className="metric-value">Smart</span>
+                    <p>Booking flow with clear scheduling choices.</p>
+                  </article>
+                  <article className="metric-card">
+                    <span className="metric-value">Calm</span>
+                    <p>Focused patient and staff workspace with less clutter.</p>
+                  </article>
+                </div>
+                <div className="brand-audience">
+                  <article className="info-card"><span className="info-kicker">For Pet Owners</span><p>Simple access to booking details, account records, and future appointments.</p></article>
+                  <article className="info-card"><span className="info-kicker">For Clinics</span><p>Organized sign-ins and cleaner reservation flow for the daily schedule.</p></article>
+                </div>
+              </div>
               <article className="info-card info-card-wide"><span className="info-kicker">Core Features</span><p>Pets, bookings, appointment review, and admin approval in one workspace.</p></article>
             </div>
           ) : isAdmin ? (
@@ -555,10 +638,18 @@ function App() {
 
               <NavButtons items={navigationItems} activeView={activeView} onChange={navigateToView} className="side-nav" />
 
-              <article className="info-card info-card-wide">
-                <span className="info-kicker">At A Glance</span>
-                <p>{pendingAppointments.length} pending reviews and {todayAppointments.length} appointments today.</p>
-              </article>
+              <div className="sidebar-stat-grid">
+                <article className="info-card info-card-wide compact-info-card">
+                  <span className="info-kicker">Pending Reviews</span>
+                  <strong>{pendingAppointments.length}</strong>
+                  <p>Requests waiting for staff action.</p>
+                </article>
+                <article className="info-card info-card-wide compact-info-card">
+                  <span className="info-kicker">Today&apos;s Queue</span>
+                  <strong>{todayAppointments.length}</strong>
+                  <p>Visits currently on the clinic schedule.</p>
+                </article>
+              </div>
 
               <button type="button" className="logout-button" onClick={logout}>Logout</button>
             </div>
@@ -571,10 +662,18 @@ function App() {
                 <p>{currentUser.role}</p>
               </div>
 
-              <article className="info-card info-card-wide">
-                <span className="info-kicker">Your Journey</span>
-                <p>Keep your pets updated and make bookings from a focused, distraction-free workspace.</p>
-              </article>
+              <div className="sidebar-stat-grid">
+                <article className="info-card info-card-wide compact-info-card">
+                  <span className="info-kicker">Pet Profiles</span>
+                  <strong>{pets.length}</strong>
+                  <p>Keep records current before each visit.</p>
+                </article>
+                <article className="info-card info-card-wide compact-info-card">
+                  <span className="info-kicker">Appointments</span>
+                  <strong>{appointments.length}</strong>
+                  <p>Track requests, updates, and upcoming care.</p>
+                </article>
+              </div>
 
               <button type="button" className="logout-button" onClick={logout}>Logout</button>
             </div>
@@ -583,9 +682,17 @@ function App() {
 
         <section className="panel">
           <div className="panel-header">
-            <p className="panel-kicker">{panelKicker}</p>
-            <h2>{title}</h2>
-            <p className="panel-copy">{subtitle}</p>
+            <div>
+              <p className="panel-kicker">{panelKicker}</p>
+              <h2>{title}</h2>
+              <p className="panel-copy">{subtitle}</p>
+            </div>
+            {currentUser ? (
+              <div className="panel-badge-cluster" aria-label="Workspace Status">
+                <span className="panel-badge">{isAdmin ? 'Clinic Ops' : 'Client Portal'}</span>
+                <span className="panel-badge panel-badge-soft">{activeNavigation?.label || 'Access'}</span>
+              </div>
+            ) : null}
           </div>
 
           {isAdmin && currentUser ? (
