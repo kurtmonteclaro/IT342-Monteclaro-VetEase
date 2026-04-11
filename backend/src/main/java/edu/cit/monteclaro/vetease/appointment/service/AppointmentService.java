@@ -6,6 +6,7 @@ import edu.cit.monteclaro.vetease.appointment.model.Appointment;
 import edu.cit.monteclaro.vetease.appointment.model.AppointmentStatus;
 import edu.cit.monteclaro.vetease.appointment.repository.AppointmentRepository;
 import edu.cit.monteclaro.vetease.auth.model.User;
+import edu.cit.monteclaro.vetease.auth.model.UserRole;
 import edu.cit.monteclaro.vetease.auth.service.CurrentUserService;
 import edu.cit.monteclaro.vetease.common.BadRequestException;
 import edu.cit.monteclaro.vetease.common.ConflictException;
@@ -52,12 +53,14 @@ public class AppointmentService {
 
     @Transactional(readOnly = true)
     public List<AppointmentDto> findMine() {
+        requireClientUser();
         User user = currentUserService.requireCurrentUser();
         return appointmentRepository.findByClientIdOrderByDateAscTimeAsc(user.getId()).stream().map(this::toDto).toList();
     }
 
     @Transactional
     public AppointmentDto create(CreateAppointmentRequest request) {
+        requireClientUser();
         User user = currentUserService.requireCurrentUser();
         Pet pet = petService.requireOwnedPet(request.petId());
         ClinicService service = clinicServiceCatalogService.requireActive(request.serviceId());
@@ -77,6 +80,7 @@ public class AppointmentService {
 
     @Transactional
     public AppointmentDto cancelMine(Long id) {
+        requireClientUser();
         Appointment appointment = requireOwnedAppointment(id);
         if (appointment.getStatus() == AppointmentStatus.CANCELLED || appointment.getStatus() == AppointmentStatus.COMPLETED) {
             throw new BadRequestException("This appointment can no longer be cancelled");
@@ -87,6 +91,7 @@ public class AppointmentService {
 
     @Transactional
     public AppointmentDto rescheduleMine(Long id, LocalDate date, LocalTime time) {
+        requireClientUser();
         Appointment appointment = requireOwnedAppointment(id);
         if (appointment.getStatus() == AppointmentStatus.CANCELLED || appointment.getStatus() == AppointmentStatus.COMPLETED) {
             throw new BadRequestException("This appointment can no longer be rescheduled");
@@ -159,6 +164,14 @@ public class AppointmentService {
     }
 
     private void validateSlot(LocalDate date, LocalTime time, ClinicService service) {
+        LocalDate today = LocalDate.now();
+        if (date.isBefore(today)) {
+            throw new BadRequestException("Cannot book a date in the past");
+        }
+        if (date.equals(today) && time.isBefore(LocalTime.now())) {
+            throw new BadRequestException("Cannot book a time that has already passed");
+        }
+
         if (clinicSettingsService.isBlocked(date)) {
             throw new ConflictException("Selected date is blocked");
         }
@@ -196,5 +209,12 @@ public class AppointmentService {
             return null;
         }
         return value.trim();
+    }
+
+    private void requireClientUser() {
+        User user = currentUserService.requireCurrentUser();
+        if (user.getRole() != UserRole.CLIENT) {
+            throw new ForbiddenOperationException("Only pet owners can book or manage their appointments");
+        }
     }
 }

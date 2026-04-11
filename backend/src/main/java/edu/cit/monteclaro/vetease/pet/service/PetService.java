@@ -1,6 +1,7 @@
 package edu.cit.monteclaro.vetease.pet.service;
 
 import edu.cit.monteclaro.vetease.auth.model.User;
+import edu.cit.monteclaro.vetease.auth.model.UserRole;
 import edu.cit.monteclaro.vetease.auth.service.CurrentUserService;
 import edu.cit.monteclaro.vetease.common.ForbiddenOperationException;
 import edu.cit.monteclaro.vetease.common.NotFoundException;
@@ -25,12 +26,14 @@ public class PetService {
 
     @Transactional(readOnly = true)
     public List<PetDto> findMine() {
+        requireClientUser();
         User user = currentUserService.requireCurrentUser();
         return petRepository.findByOwnerIdOrderByNameAsc(user.getId()).stream().map(this::toDto).toList();
     }
 
     @Transactional
     public PetDto create(PetRequest request) {
+        requireClientUser();
         User owner = currentUserService.requireCurrentUser();
         Pet pet = new Pet();
         apply(pet, request);
@@ -40,6 +43,7 @@ public class PetService {
 
     @Transactional
     public PetDto update(Long id, PetRequest request) {
+        requireClientUser();
         Pet pet = requireOwnedPet(id);
         apply(pet, request);
         return toDto(petRepository.save(pet));
@@ -47,6 +51,7 @@ public class PetService {
 
     @Transactional
     public void delete(Long id) {
+        requireClientUser();
         petRepository.delete(requireOwnedPet(id));
     }
 
@@ -86,5 +91,12 @@ public class PetService {
             return null;
         }
         return value.trim();
+    }
+
+    private void requireClientUser() {
+        User user = currentUserService.requireCurrentUser();
+        if (user.getRole() != UserRole.CLIENT) {
+            throw new ForbiddenOperationException("Only pet owners can manage pets");
+        }
     }
 }

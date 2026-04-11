@@ -36,6 +36,11 @@ public class AvailabilityService {
 
     @Transactional(readOnly = true)
     public List<LocalTime> getAvailableSlots(LocalDate date, Long serviceId) {
+        LocalDate today = LocalDate.now();
+        if (date.isBefore(today)) {
+            return List.of();
+        }
+
         ClinicService clinicService = clinicServiceRepository.findById(serviceId)
             .orElseThrow(() -> new NotFoundException("Service not found"));
 
@@ -58,6 +63,12 @@ public class AvailabilityService {
                 slots.add(current);
             }
         }
+
+        if (date.equals(today)) {
+            LocalTime now = LocalTime.now();
+            return slots.stream().filter((LocalTime slot) -> !slot.isBefore(now)).collect(Collectors.toList());
+        }
+
         return slots;
     }
 }
