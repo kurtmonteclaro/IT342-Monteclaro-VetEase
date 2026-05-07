@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ClinicServiceRepository extends JpaRepository<ClinicService, Long> {
 
     List<ClinicService> findByActiveTrueOrderByNameAsc();
+
+    List<ClinicService> findAllByOrderByNameAsc();
+
+    boolean existsByNameIgnoreCase(String name);
 }

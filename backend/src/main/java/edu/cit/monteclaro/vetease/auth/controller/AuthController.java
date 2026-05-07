@@ -1,6 +1,7 @@
 package edu.cit.monteclaro.vetease.auth.controller;
 
 import edu.cit.monteclaro.vetease.auth.dto.AuthResponse;
+import edu.cit.monteclaro.vetease.auth.dto.GoogleOAuthRequest;
 import edu.cit.monteclaro.vetease.auth.dto.LoginRequest;
 import edu.cit.monteclaro.vetease.auth.dto.RegisterRequest;
 import edu.cit.monteclaro.vetease.auth.service.AuthService;
@@ -30,5 +31,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/oauth/google")
+    public ResponseEntity<AuthResponse> googleOAuth(@Valid @RequestBody GoogleOAuthRequest request) {
+        return ResponseEntity.ok(authService.googleOAuth(request));
     }
 }

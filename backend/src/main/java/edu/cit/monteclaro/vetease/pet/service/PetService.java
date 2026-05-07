@@ -9,19 +9,34 @@ import edu.cit.monteclaro.vetease.pet.dto.PetDto;
 import edu.cit.monteclaro.vetease.pet.dto.PetRequest;
 import edu.cit.monteclaro.vetease.pet.model.Pet;
 import edu.cit.monteclaro.vetease.pet.repository.PetRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class PetService {
 
     private final PetRepository petRepository;
     private final CurrentUserService currentUserService;
+    private final Path uploadDirectory;
 
-    public PetService(PetRepository petRepository, CurrentUserService currentUserService) {
+    public PetService(
+        PetRepository petRepository,
+        CurrentUserService currentUserService,
+        @Value("${vetease.upload-dir:uploads/pets}") String uploadDirectory
+    ) {
         this.petRepository = petRepository;
         this.currentUserService = currentUserService;
+        this.uploadDirectory = Path.of(uploadDirectory).toAbsolutePath().normalize();
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +70,25 @@ public class PetService {
         petRepository.delete(requireOwnedPet(id));
     }
 
+    @Transactional
+    public PetDto uploadPhoto(Long id, MultipartFile file) {
+        requireClientUser();
+        Pet pet = requireOwnedPet(id);
+        validatePhoto(file);
+
+        try {
+            Files.createDirectories(uploadDirectory);
+            String extension = extensionFor(file.getContentType());
+            String fileName = "pet-%d-%s.%s".formatted(pet.getId(), UUID.randomUUID(), extension);
+            Path target = uploadDirectory.resolve(fileName).normalize();
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            pet.setPhotoUrl("/uploads/pets/" + fileName);
+            return toDto(petRepository.save(pet));
+        } catch (IOException exception) {
+            throw new edu.cit.monteclaro.vetease.common.BadRequestException("Could not store pet photo");
+        }
+    }
+
     @Transactional(readOnly = true)
     public Pet requireOwnedPet(Long id) {
         User user = currentUserService.requireCurrentUser();
@@ -73,8 +107,30 @@ public class PetService {
             pet.getBreed(),
             pet.getAge(),
             pet.getNotes(),
-            pet.getVaccineHistory()
+            pet.getVaccineHistory(),
+            pet.getPhotoUrl()
         );
+    }
+
+    private void validatePhoto(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new edu.cit.monteclaro.vetease.common.BadRequestException("Image file is required");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new edu.cit.monteclaro.vetease.common.BadRequestException("Image file must be 5MB or smaller");
+        }
+        String contentType = file.getContentType();
+        if (!Set.of("image/jpeg", "image/png", "image/webp").contains(contentType)) {
+            throw new edu.cit.monteclaro.vetease.common.BadRequestException("Only JPG, PNG, and WEBP images are allowed");
+        }
+    }
+
+    private String extensionFor(String contentType) {
+        return switch (String.valueOf(contentType).toLowerCase(Locale.ROOT)) {
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            default -> "jpg";
+        };
     }
 
     private void apply(Pet pet, PetRequest request) {

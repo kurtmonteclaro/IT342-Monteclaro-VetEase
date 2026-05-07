@@ -18,6 +18,7 @@ import edu.cit.monteclaro.vetease.servicecatalog.model.ClinicService;
 import edu.cit.monteclaro.vetease.servicecatalog.service.ClinicServiceCatalogService;
 import edu.cit.monteclaro.vetease.settings.model.ClinicSettings;
 import edu.cit.monteclaro.vetease.settings.service.ClinicSettingsService;
+import edu.cit.monteclaro.vetease.notification.EmailService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.EnumSet;
@@ -34,6 +35,7 @@ public class AppointmentService {
     private final ClinicServiceCatalogService clinicServiceCatalogService;
     private final ClinicSettingsService clinicSettingsService;
     private final AvailabilityService availabilityService;
+    private final EmailService emailService;
 
     public AppointmentService(
         AppointmentRepository appointmentRepository,
@@ -41,7 +43,8 @@ public class AppointmentService {
         PetService petService,
         ClinicServiceCatalogService clinicServiceCatalogService,
         ClinicSettingsService clinicSettingsService,
-        AvailabilityService availabilityService
+        AvailabilityService availabilityService,
+        EmailService emailService
     ) {
         this.appointmentRepository = appointmentRepository;
         this.currentUserService = currentUserService;
@@ -49,6 +52,7 @@ public class AppointmentService {
         this.clinicServiceCatalogService = clinicServiceCatalogService;
         this.clinicSettingsService = clinicSettingsService;
         this.availabilityService = availabilityService;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -127,7 +131,9 @@ public class AppointmentService {
             throw new BadRequestException("Only pending appointments can be confirmed");
         }
         appointment.setStatus(AppointmentStatus.CONFIRMED);
-        return toDto(appointmentRepository.save(appointment));
+        Appointment saved = appointmentRepository.save(appointment);
+        emailService.sendAppointmentConfirmation(saved);
+        return toDto(saved);
     }
 
     @Transactional

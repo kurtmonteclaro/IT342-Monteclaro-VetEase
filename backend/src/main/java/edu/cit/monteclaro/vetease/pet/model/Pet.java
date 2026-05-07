@@ -40,6 +40,8 @@ public class Pet {
     @Column(columnDefinition = "TEXT")
     private String vaccineHistory;
 
+    private String photoUrl;
+
     public Long getId() {
         return id;
     }
@@ -102,5 +104,13 @@ public class Pet {
 
     public void setVaccineHistory(String vaccineHistory) {
         this.vaccineHistory = vaccineHistory;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
     }
 }

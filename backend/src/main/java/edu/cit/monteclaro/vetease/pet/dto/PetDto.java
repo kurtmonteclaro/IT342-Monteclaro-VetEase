@@ -7,6 +7,7 @@ public record PetDto(
     String breed,
     Integer age,
     String notes,
-    String vaccineHistory
+    String vaccineHistory,
+    String photoUrl
 ) {
 }
