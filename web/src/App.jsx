@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AdminTitleStrip, AuthForms, NavButtons, WorkspaceView } from './components/AppSections'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 const SESSION_KEY = 'vetease-session'
 
 const INITIAL_REGISTER_FORM = {
@@ -37,10 +38,24 @@ const INITIAL_BOOKING_FORM = {
   notes: '',
 }
 
+const INITIAL_RESCHEDULE_FORM = {
+  appointmentId: null,
+  serviceId: '',
+  date: '',
+  time: '',
+}
+
 const INITIAL_SETTINGS_FORM = {
   openingTime: '09:00',
   closingTime: '17:00',
   slotMinutes: 30,
+}
+
+const INITIAL_SERVICE_FORM = {
+  name: '',
+  description: '',
+  durationMinutes: 30,
+  active: true,
 }
 
 const NAVIGATION_CONFIG = [
@@ -95,17 +110,28 @@ function App() {
   const [successMessage, setSuccessMessage] = useState('')
 
   const [services, setServices] = useState([])
+  const [dogBreeds, setDogBreeds] = useState([])
   const [pets, setPets] = useState([])
   const [petForm, setPetForm] = useState(INITIAL_PET_FORM)
+  const [petPhotoFile, setPetPhotoFile] = useState(null)
+  const [petPhotoPreview, setPetPhotoPreview] = useState('')
   const [editingPetId, setEditingPetId] = useState(null)
   const [appointments, setAppointments] = useState([])
   const [bookingForm, setBookingForm] = useState(INITIAL_BOOKING_FORM)
   const [availableSlots, setAvailableSlots] = useState([])
+  const [rescheduleForm, setRescheduleForm] = useState(INITIAL_RESCHEDULE_FORM)
+  const [rescheduleSlots, setRescheduleSlots] = useState([])
   const [pendingAppointments, setPendingAppointments] = useState([])
   const [todayAppointments, setTodayAppointments] = useState([])
   const [settingsForm, setSettingsForm] = useState(INITIAL_SETTINGS_FORM)
+  const [adminServices, setAdminServices] = useState([])
+  const [serviceForm, setServiceForm] = useState(INITIAL_SERVICE_FORM)
+  const [editingServiceId, setEditingServiceId] = useState(null)
   const [blockedDates, setBlockedDates] = useState([])
   const [blockedDateInput, setBlockedDateInput] = useState('')
+  const [gisReady, setGisReady] = useState(false)
+  const googleInitializedRef = useRef(false)
+  const googleButtonRef = useRef(null)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -207,7 +233,50 @@ function App() {
 
   useEffect(() => {
     void loadServices()
+    void loadDogBreeds()
   }, [])
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) {
+      return undefined
+    }
+
+    const timer = globalThis.setInterval(() => {
+      if (globalThis.google?.accounts?.id) {
+        setGisReady(true)
+        globalThis.clearInterval(timer)
+      }
+    }, 250)
+
+    return () => globalThis.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    if (currentUser || !GOOGLE_CLIENT_ID || !gisReady || !googleButtonRef.current || !globalThis.google?.accounts?.id) {
+      return
+    }
+
+    if (!googleInitializedRef.current) {
+      globalThis.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => {
+          void submitGoogleLogin(response.credential)
+        },
+      })
+      googleInitializedRef.current = true
+    }
+
+    googleButtonRef.current.innerHTML = ''
+    globalThis.google.accounts.id.renderButton(googleButtonRef.current, {
+      theme: 'outline',
+      size: 'large',
+      shape: 'rectangular',
+      logo_alignment: 'left',
+      locale: 'en',
+      width: Math.min(400, googleButtonRef.current.offsetWidth || 400),
+      text: 'continue_with',
+    })
+  }, [currentUser, gisReady, mode])
 
   useEffect(() => {
     if (!currentUser) {
@@ -230,6 +299,20 @@ function App() {
 
     void loadAvailability(bookingForm.date, bookingForm.serviceId)
   }, [bookingForm.date, bookingForm.serviceId])
+
+  useEffect(() => {
+    if (!rescheduleForm.date || !rescheduleForm.serviceId) {
+      setRescheduleSlots([])
+      return
+    }
+
+    if (rescheduleForm.date < todayLocalDateString()) {
+      setRescheduleSlots([])
+      return
+    }
+
+    void loadRescheduleAvailability(rescheduleForm.date, rescheduleForm.serviceId)
+  }, [rescheduleForm.date, rescheduleForm.serviceId])
 
   useEffect(() => {
     const isAuthPath = pathname === '/login' || pathname === '/register'
@@ -270,7 +353,16 @@ function App() {
   const readErrorMessage = async (response) => {
     try {
       const payload = await response.json()
-      return payload.message || 'Request failed. Please try again.'
+      if (payload.message) {
+        return payload.message
+      }
+      if (payload.error?.message) {
+        return payload.error.message
+      }
+      if (typeof payload.error === 'string') {
+        return payload.error
+      }
+      return 'Request failed. Please try again.'
     } catch {
       return 'Request failed. Please try again.'
     }
@@ -308,6 +400,15 @@ function App() {
     }
   }
 
+  const loadDogBreeds = async () => {
+    try {
+      const payload = await fetchJson('/api/external/dog-breeds', {}, false)
+      setDogBreeds(payload || [])
+    } catch {
+      setDogBreeds([])
+    }
+  }
+
   const loadAvailability = async (date, serviceId) => {
     try {
       const payload = await fetchJson(`/api/availability?date=${date}&serviceId=${serviceId}`, {}, false)
@@ -318,14 +419,25 @@ function App() {
     }
   }
 
+  const loadRescheduleAvailability = async (date, serviceId) => {
+    try {
+      const payload = await fetchJson(`/api/availability?date=${date}&serviceId=${serviceId}`, {}, false)
+      setRescheduleSlots(payload || [])
+    } catch (error) {
+      setRescheduleSlots([])
+      setErrorMessage(error.message)
+    }
+  }
+
   const refreshAuthenticatedData = async (includeAdminData) => {
     try {
       if (includeAdminData) {
-        const [pendingPayload, todayPayload, settingsPayload, blockedPayload] = await Promise.all([
+        const [pendingPayload, todayPayload, settingsPayload, blockedPayload, servicePayload] = await Promise.all([
           fetchJson('/api/admin/appointments/pending'),
           fetchJson('/api/admin/appointments/today'),
           fetchJson('/api/admin/settings'),
           fetchJson('/api/admin/blocked-dates'),
+          fetchJson('/api/admin/services'),
         ])
 
         setPendingAppointments(pendingPayload || [])
@@ -336,6 +448,7 @@ function App() {
           slotMinutes: settingsPayload?.slotMinutes || 30,
         })
         setBlockedDates(blockedPayload || [])
+        setAdminServices(servicePayload || [])
         setPets([])
         setAppointments([])
         return
@@ -414,7 +527,10 @@ function App() {
     setPendingAppointments([])
     setTodayAppointments([])
     setPetForm(INITIAL_PET_FORM)
+    clearPetPhotoSelection()
     setBookingForm(INITIAL_BOOKING_FORM)
+    setRescheduleForm(INITIAL_RESCHEDULE_FORM)
+    setRescheduleSlots([])
     setEditingPetId(null)
     navigate('/login', { replace: true })
     clearAlerts()
@@ -425,7 +541,7 @@ function App() {
     clearAlerts()
 
     try {
-      await fetchJson(editingPetId ? `/api/pets/${editingPetId}` : '/api/pets', {
+      const savedPet = await fetchJson(editingPetId ? `/api/pets/${editingPetId}` : '/api/pets', {
         method: editingPetId ? 'PUT' : 'POST',
         body: JSON.stringify({
           ...petForm,
@@ -433,7 +549,12 @@ function App() {
         }),
       })
 
+      if (petPhotoFile && savedPet?.id) {
+        await uploadPetPhotoRequest(savedPet.id, petPhotoFile)
+      }
+
       setPetForm(INITIAL_PET_FORM)
+      clearPetPhotoSelection()
       setEditingPetId(null)
       setSuccessMessage(editingPetId ? 'Pet profile updated.' : 'Pet profile added.')
       await refreshAuthenticatedData(currentUser.role === 'ADMIN')
@@ -452,6 +573,7 @@ function App() {
       notes: pet.notes ?? '',
       vaccineHistory: pet.vaccineHistory ?? '',
     })
+    clearPetPhotoSelection()
     navigateToView('pets')
   }
 
@@ -464,6 +586,7 @@ function App() {
       if (editingPetId === petId) {
         setEditingPetId(null)
         setPetForm(INITIAL_PET_FORM)
+        clearPetPhotoSelection()
       }
       await refreshAuthenticatedData(currentUser.role === 'ADMIN')
     } catch (error) {
@@ -528,6 +651,117 @@ function App() {
     }
   }
 
+  const submitGoogleLogin = async (idToken) => {
+    clearAlerts()
+    if (!idToken) {
+      setErrorMessage('Google did not return an ID token. Check your Google OAuth origin settings.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const payload = await fetchJson('/api/auth/oauth/google', {
+        method: 'POST',
+        body: JSON.stringify({ idToken }),
+      }, false)
+
+      persistSession(payload)
+      setSuccessMessage('Google login successful.')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const uploadPetPhoto = async (petId, file) => {
+    if (!file) {
+      return
+    }
+
+    clearAlerts()
+
+    try {
+      await uploadPetPhotoRequest(petId, file)
+      setSuccessMessage('Pet photo uploaded.')
+      await refreshAuthenticatedData(false)
+    } catch (error) {
+      setErrorMessage(error.message)
+    }
+  }
+
+  const uploadPetPhotoRequest = async (petId, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${API_BASE_URL}/api/pets/${petId}/upload-photo`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    })
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response))
+    }
+  }
+
+  const selectPetPhoto = (file) => {
+    if (petPhotoPreview) {
+      URL.revokeObjectURL(petPhotoPreview)
+    }
+    setPetPhotoFile(file || null)
+    setPetPhotoPreview(file ? URL.createObjectURL(file) : '')
+  }
+
+  const clearPetPhotoSelection = () => {
+    setPetPhotoFile(null)
+    setPetPhotoPreview((previous) => {
+      if (previous) {
+        URL.revokeObjectURL(previous)
+      }
+      return ''
+    })
+  }
+
+  const startReschedule = (appointment) => {
+    clearAlerts()
+    setRescheduleForm({
+      appointmentId: appointment.id,
+      serviceId: String(appointment.service.id),
+      date: appointment.date,
+      time: '',
+    })
+  }
+
+  const cancelReschedule = () => {
+    setRescheduleForm(INITIAL_RESCHEDULE_FORM)
+    setRescheduleSlots([])
+  }
+
+  const submitReschedule = async (event) => {
+    event.preventDefault()
+    clearAlerts()
+
+    if (!rescheduleForm.appointmentId || !rescheduleForm.date || !rescheduleForm.time) {
+      setErrorMessage('Choose a new date and available slot before rescheduling.')
+      return
+    }
+
+    try {
+      const date = encodeURIComponent(rescheduleForm.date)
+      const time = encodeURIComponent(rescheduleForm.time)
+      await fetchJson(`/api/appointments/${rescheduleForm.appointmentId}/reschedule?date=${date}&time=${time}`, {
+        method: 'POST',
+      })
+
+      setSuccessMessage('Appointment rescheduled and returned to pending review.')
+      cancelReschedule()
+      await refreshAuthenticatedData(currentUser.role === 'ADMIN')
+    } catch (error) {
+      setErrorMessage(error.message)
+    }
+  }
+
   const runAdminAction = async (appointmentId, action, message) => {
     clearAlerts()
 
@@ -580,6 +814,52 @@ function App() {
     try {
       await fetchJson(`/api/admin/blocked-dates/${id}`, { method: 'DELETE' })
       setSuccessMessage('Blocked date removed.')
+      await refreshAuthenticatedData(true)
+    } catch (error) {
+      setErrorMessage(error.message)
+    }
+  }
+
+  const submitAdminService = async (event) => {
+    event.preventDefault()
+    clearAlerts()
+
+    try {
+      await fetchJson(editingServiceId ? `/api/admin/services/${editingServiceId}` : '/api/admin/services', {
+        method: editingServiceId ? 'PUT' : 'POST',
+        body: JSON.stringify({
+          ...serviceForm,
+          durationMinutes: Number(serviceForm.durationMinutes),
+        }),
+      })
+
+      setServiceForm(INITIAL_SERVICE_FORM)
+      setEditingServiceId(null)
+      setSuccessMessage(editingServiceId ? 'Service updated.' : 'Service added.')
+      await loadServices()
+      await refreshAuthenticatedData(true)
+    } catch (error) {
+      setErrorMessage(error.message)
+    }
+  }
+
+  const editAdminService = (service) => {
+    setEditingServiceId(service.id)
+    setServiceForm({
+      name: service.name,
+      description: service.description,
+      durationMinutes: service.durationMinutes,
+      active: service.active,
+    })
+  }
+
+  const deactivateAdminService = async (serviceId) => {
+    clearAlerts()
+
+    try {
+      await fetchJson(`/api/admin/services/${serviceId}`, { method: 'DELETE' })
+      setSuccessMessage('Service deactivated.')
+      await loadServices()
       await refreshAuthenticatedData(true)
     } catch (error) {
       setErrorMessage(error.message)
@@ -721,6 +1001,8 @@ function App() {
                 setLoginForm={setLoginForm}
                 submitRegister={submitRegister}
                 submitLogin={submitLogin}
+                googleClientId={GOOGLE_CLIENT_ID}
+                googleButtonRef={googleButtonRef}
               />
             </>
           ) : (
@@ -729,30 +1011,50 @@ function App() {
               <div className="workspace-body">
                 <WorkspaceView
                   activeView={activeView}
+                  apiBaseUrl={API_BASE_URL}
                   currentUser={currentUser}
                   pets={pets}
                   appointments={appointments}
                   nextAppointment={nextAppointment}
                   pendingAppointments={pendingAppointments}
                   services={services}
+                  dogBreeds={dogBreeds}
                   petForm={petForm}
                   setPetForm={setPetForm}
+                  petPhotoPreview={petPhotoPreview}
+                  selectPetPhoto={selectPetPhoto}
+                  clearPetPhotoSelection={clearPetPhotoSelection}
                   editingPetId={editingPetId}
                   submitPet={submitPet}
                   setEditingPetId={setEditingPetId}
                   setPetFormToInitial={() => setPetForm(INITIAL_PET_FORM)}
                   editPet={editPet}
                   deletePet={deletePet}
+                  uploadPetPhoto={uploadPetPhoto}
                   bookingForm={bookingForm}
                   setBookingForm={setBookingForm}
                   availableSlots={availableSlots}
                   submitBooking={submitBooking}
                   cancelAppointment={cancelAppointment}
+                  rescheduleForm={rescheduleForm}
+                  setRescheduleForm={setRescheduleForm}
+                  rescheduleSlots={rescheduleSlots}
+                  startReschedule={startReschedule}
+                  cancelReschedule={cancelReschedule}
+                  submitReschedule={submitReschedule}
                   todayAppointments={todayAppointments}
                   runAdminAction={runAdminAction}
                   settingsForm={settingsForm}
                   setSettingsForm={setSettingsForm}
                   saveSettings={saveSettings}
+                  adminServices={adminServices}
+                  serviceForm={serviceForm}
+                  setServiceForm={setServiceForm}
+                  editingServiceId={editingServiceId}
+                  setEditingServiceId={setEditingServiceId}
+                  submitAdminService={submitAdminService}
+                  editAdminService={editAdminService}
+                  deactivateAdminService={deactivateAdminService}
                   blockedDateInput={blockedDateInput}
                   setBlockedDateInput={setBlockedDateInput}
                   addBlockedDate={addBlockedDate}

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="teal" x1="20" x2="96" y1="18" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08b6aa" />
+      <stop offset="1" stop-color="#006373" />
+    </linearGradient>
+    <linearGradient id="blue" x1="84" x2="118" y1="28" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#44a7ef" />
+      <stop offset="1" stop-color="#2477c6" />
+    </linearGradient>
+    <linearGradient id="green" x1="70" x2="110" y1="72" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9bd968" />
+      <stop offset="1" stop-color="#64b94a" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#ffffff" />
+  <path d="M34 30h60a15 15 0 0 1 15 15v48a15 15 0 0 1-15 15H34a15 15 0 0 1-15-15V45a15 15 0 0 1 15-15Z" fill="none" stroke="url(#teal)" stroke-width="8" stroke-linecap="round" />
+  <path d="M45 20v22M83 20v22M53 30h22" fill="none" stroke="url(#teal)" stroke-width="8" stroke-linecap="round" />
+  <path d="M42 51h8M57 51h8M72 51h8M87 51h8" stroke="#ccefeb" stroke-width="8" stroke-linecap="round" />
+  <ellipse cx="45" cy="72" rx="8" ry="11" fill="url(#teal)" transform="rotate(-22 45 72)" />
+  <ellipse cx="59" cy="62" rx="8" ry="11" fill="url(#teal)" />
+  <ellipse cx="75" cy="62" rx="8" ry="11" fill="url(#teal)" />
+  <ellipse cx="90" cy="72" rx="8" ry="11" fill="url(#teal)" transform="rotate(22 90 72)" />
+  <path d="M50 92c1-18 12-25 18-17 6-8 17-1 18 17 0 7-8 10-18 10s-18-3-18-10Z" fill="url(#teal)" />
+  <path d="M58 86c3-5 8-5 10 0 2-5 7-5 10 0l-10 10-10-10Z" fill="#ffffff" />
+  <circle cx="95" cy="94" r="22" fill="url(#green)" />
+  <path d="M85 94l7 7 15-16" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160">
+  <defs>
+    <linearGradient id="teal" x1="60" x2="300" y1="16" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08b6aa" />
+      <stop offset="1" stop-color="#006373" />
+    </linearGradient>
+    <linearGradient id="word" x1="300" x2="680" y1="40" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#005f72" />
+      <stop offset="0.45" stop-color="#08737e" />
+      <stop offset="0.46" stop-color="#2f95dc" />
+      <stop offset="1" stop-color="#2e87d4" />
+    </linearGradient>
+    <linearGradient id="green" x1="205" x2="270" y1="88" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9bd968" />
+      <stop offset="1" stop-color="#64b94a" />
+    </linearGradient>
+  </defs>
+  <rect width="720" height="160" fill="#ffffff" />
+  <path d="M82 35h118a25 25 0 0 1 25 25v58a25 25 0 0 1-25 25H82a25 25 0 0 1-25-25V60a25 25 0 0 1 25-25Z" fill="none" stroke="url(#teal)" stroke-width="9" stroke-linecap="round" />
+  <path d="M101 20v31M181 20v31M119 35h44" fill="none" stroke="url(#teal)" stroke-width="10" stroke-linecap="round" />
+  <path d="M96 68h10M124 68h10M152 68h10M180 68h10" stroke="#d0efec" stroke-width="9" stroke-linecap="round" />
+  <ellipse cx="105" cy="93" rx="10" ry="14" fill="url(#teal)" transform="rotate(-22 105 93)" />
+  <ellipse cx="130" cy="80" rx="10" ry="14" fill="url(#teal)" />
+  <ellipse cx="154" cy="80" rx="10" ry="14" fill="url(#teal)" />
+  <ellipse cx="180" cy="93" rx="10" ry="14" fill="url(#teal)" transform="rotate(22 180 93)" />
+  <path d="M113 121c1-25 18-34 29-22 10-12 27-3 28 22 0 10-12 14-29 14s-28-4-28-14Z" fill="url(#teal)" />
+  <path d="M127 111c5-8 12-8 15 0 4-8 11-8 16 0l-16 16-15-16Z" fill="#ffffff" />
+  <circle cx="218" cy="123" r="30" fill="url(#green)" />
+  <path d="M205 123l10 10 21-24" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="280" y="115" font-family="Inter, Arial, Helvetica, sans-serif" font-size="88" font-weight="800" fill="url(#word)">VetEase</text>
+</svg>

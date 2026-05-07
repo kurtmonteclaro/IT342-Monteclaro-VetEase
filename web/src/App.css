@@ -93,7 +93,7 @@
   border-right: 1px solid rgba(208, 233, 224, 0.12);
 }
 
-.brand-mark {
+.brand-mark-core {
   width: 60px;
   height: 60px;
   display: grid;
@@ -742,6 +742,148 @@ textarea:focus {
   border: 1px solid rgba(112, 139, 126, 0.12);
 }
 
+.pet-profile-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(112, 139, 126, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.pet-profile-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pet-form-photo-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(248, 247, 242, 0.72);
+  border: 1px solid rgba(126, 146, 136, 0.16);
+}
+
+.pet-photo-preview,
+.pet-photo-slot {
+  width: 76px;
+  height: 76px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(220, 234, 217, 0.95), rgba(246, 242, 232, 0.95));
+  border: 1px solid rgba(126, 146, 136, 0.28);
+  display: grid;
+  place-items: center;
+  color: #2f6558;
+  font-size: 1.7rem;
+  font-weight: 800;
+  flex: 0 0 76px;
+}
+
+.pet-photo-preview img,
+.pet-photo-slot img,
+.pet-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.file-picker-box {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(126, 146, 136, 0.24);
+  background: rgba(255, 255, 255, 0.62);
+  color: #4f675e;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+.visually-hidden-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.clear-photo-button {
+  margin-top: 10px;
+  min-height: 36px;
+  padding-inline: 12px;
+}
+
+.pet-profile-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.pet-profile-copy strong {
+  color: #18312a;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.pet-profile-copy p {
+  margin: 0;
+  color: #5f7168;
+}
+
+.pet-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pet-chip-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: rgba(236, 241, 238, 0.94);
+  color: #4f675e;
+  font-size: 0.79rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pet-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+.pet-action-row button,
+.pet-action-row .upload-button {
+  flex: 1 1 88px;
+  min-width: 88px;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
 .meta-row {
   grid-auto-flow: column;
   justify-content: start;
@@ -811,6 +953,10 @@ textarea:focus {
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 }
 
+.compact-slot-grid {
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+}
+
 .slot-button {
   min-height: 38px;
 }
@@ -821,6 +967,52 @@ textarea:focus {
   border-radius: 16px;
   background: rgba(241, 242, 236, 0.75);
   border: 1px dashed rgba(126, 146, 136, 0.42);
+}
+
+.reschedule-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(126, 146, 136, 0.24);
+}
+
+.upload-button {
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.upload-button input {
+  display: none;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #18312a;
+  font-weight: 700;
+}
+
+.google-button-wrap {
+  display: grid;
+  justify-content: stretch;
+  align-items: center;
+  margin-top: 0;
+  min-height: 42px;
+  height: 42px;
+  width: 100%;
+}
+
+.google-button-wrap > div,
+.google-button-wrap iframe {
+  margin-inline: auto;
+  max-width: 400px;
+  min-height: 42px !important;
+  height: 42px !important;
+  width: 100% !important;
+  border-radius: 14px !important;
 }
 
 .empty-state {
@@ -981,6 +1173,20 @@ textarea:focus {
 
   .action-row.compact {
     justify-content: start;
+  }
+
+  .pet-profile-card {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .pet-action-row {
+    gap: 8px;
+  }
+
+  .pet-form-photo-row {
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 
   .admin-title-strip {

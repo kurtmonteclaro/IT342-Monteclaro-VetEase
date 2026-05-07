@@ -59,6 +59,8 @@ export function AuthForms({
   setLoginForm,
   submitRegister,
   submitLogin,
+  googleClientId,
+  googleButtonRef,
 }) {
   if (mode === 'register') {
     return (
@@ -106,6 +108,7 @@ export function AuthForms({
           </select>
 
           <button type="submit" disabled={loading}>{loading ? 'Creating Account...' : 'Create Account'}</button>
+          {googleClientId ? <div className="google-button-wrap" ref={googleButtonRef} /> : null}
         </form>
       </div>
     )
@@ -136,6 +139,7 @@ export function AuthForms({
         <input id="loginPassword" type="password" placeholder="Enter your password" value={loginForm.password} onChange={(event) => setLoginForm((previous) => ({ ...previous, password: event.target.value }))} required />
 
         <button type="submit" disabled={loading}>{loading ? 'Signing In...' : 'Login to VetEase'}</button>
+        {googleClientId ? <div className="google-button-wrap" ref={googleButtonRef} /> : null}
       </form>
     </div>
   )
@@ -178,30 +182,50 @@ export function AdminTitleStrip({ activeLabel, pendingCount, todayCount }) {
 
 export function WorkspaceView({
   activeView,
+  apiBaseUrl,
   currentUser,
   pets,
   appointments,
   nextAppointment,
   pendingAppointments,
   services,
+  dogBreeds,
   petForm,
   setPetForm,
+  petPhotoPreview,
+  selectPetPhoto,
+  clearPetPhotoSelection,
   editingPetId,
   submitPet,
   setEditingPetId,
   setPetFormToInitial,
   editPet,
   deletePet,
+  uploadPetPhoto,
   bookingForm,
   setBookingForm,
   availableSlots,
   submitBooking,
   cancelAppointment,
+  rescheduleForm,
+  setRescheduleForm,
+  rescheduleSlots,
+  startReschedule,
+  cancelReschedule,
+  submitReschedule,
   todayAppointments,
   runAdminAction,
   settingsForm,
   setSettingsForm,
   saveSettings,
+  adminServices,
+  serviceForm,
+  setServiceForm,
+  editingServiceId,
+  setEditingServiceId,
+  submitAdminService,
+  editAdminService,
+  deactivateAdminService,
   blockedDateInput,
   setBlockedDateInput,
   addBlockedDate,
@@ -311,6 +335,20 @@ export function WorkspaceView({
             copy="Keep species, breed, care notes, and vaccine history easy to review before appointments."
           />
           <form className="form" onSubmit={submitPet}>
+            <div className="pet-form-photo-row">
+              <div className="pet-photo-preview">
+                {petPhotoPreview ? <img src={petPhotoPreview} alt="Selected pet preview" /> : <span aria-hidden="true">+</span>}
+              </div>
+              <div>
+                <label htmlFor="petPhoto">Photo</label>
+                <label className="file-picker-box" htmlFor="petPhoto">
+                  <span>{petPhotoPreview ? 'Photo selected' : 'Choose file - no file chosen'}</span>
+                </label>
+                <input id="petPhoto" className="visually-hidden-file" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => selectPetPhoto(event.target.files?.[0] || null)} />
+                {petPhotoPreview ? <button type="button" className="secondary-button clear-photo-button" onClick={clearPetPhotoSelection}>Remove Photo</button> : null}
+              </div>
+            </div>
+
             <label htmlFor="petName">Name</label>
             <input id="petName" value={petForm.name} onChange={(event) => setPetForm((previous) => ({ ...previous, name: event.target.value }))} required />
 
@@ -321,7 +359,10 @@ export function WorkspaceView({
               </div>
               <div>
                 <label htmlFor="petBreed">Breed</label>
-                <input id="petBreed" value={petForm.breed} onChange={(event) => setPetForm((previous) => ({ ...previous, breed: event.target.value }))} required />
+                <input id="petBreed" list="dogBreedOptions" value={petForm.breed} onChange={(event) => setPetForm((previous) => ({ ...previous, breed: event.target.value }))} required />
+                <datalist id="dogBreedOptions">
+                  {(dogBreeds || []).map((breed) => <option key={breed} value={breed} />)}
+                </datalist>
               </div>
             </div>
 
@@ -336,7 +377,7 @@ export function WorkspaceView({
 
             <div className="action-row">
               <button type="submit">{editingPetId ? 'Update Pet' : 'Save Pet'}</button>
-              {editingPetId ? <button type="button" className="secondary-button" onClick={() => { setEditingPetId(null); setPetFormToInitial() }}>Cancel</button> : null}
+              {editingPetId ? <button type="button" className="secondary-button" onClick={() => { setEditingPetId(null); setPetFormToInitial(); clearPetPhotoSelection() }}>Cancel</button> : null}
             </div>
           </form>
         </article>
@@ -350,16 +391,25 @@ export function WorkspaceView({
           <div className="stack-list">
             {pets.length === 0 ? <EmptyState eyebrow="No Profiles Yet" title="Add your first pet" copy="Once you save a pet here, that profile will be available in the booking flow." /> : null}
             {pets.map((pet) => (
-              <div key={pet.id} className="list-row list-row-card">
-                <div>
-                  <strong>{pet.name}</strong>
-                  <p>{pet.species} - {pet.breed}</p>
-                  <div className="meta-row">
-                    <span>Age: {pet.age ?? 'N/A'}</span>
-                    <span>{pet.vaccineHistory ? 'Vaccines tracked' : 'No vaccine log'}</span>
+              <div key={pet.id} className="pet-profile-card">
+                <div className="pet-profile-main">
+                  <div className="pet-photo-slot">
+                    {pet.photoUrl ? <img className="pet-photo" src={`${apiBaseUrl}${pet.photoUrl}`} alt={`${pet.name} profile`} /> : <span aria-hidden="true">+</span>}
+                  </div>
+                  <div className="pet-profile-copy">
+                    <strong>{pet.name}</strong>
+                    <p>{pet.species} - {pet.breed}</p>
+                    <div className="pet-chip-row">
+                      <span>Age: {pet.age ?? 'N/A'}</span>
+                      <span>{pet.vaccineHistory ? 'Vaccines tracked' : 'No vaccine log'}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="action-row compact">
+                <div className="pet-action-row">
+                  <label className="secondary-button upload-button">
+                    Photo
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void uploadPetPhoto(pet.id, event.target.files?.[0])} />
+                  </label>
                   <button type="button" className="secondary-button" onClick={() => editPet(pet)}>Edit</button>
                   <button type="button" className="danger-button" onClick={() => void deletePet(pet.id)}>Delete</button>
                 </div>
@@ -495,8 +545,40 @@ export function WorkspaceView({
                     <span>{appointment.notes || 'No extra notes'}</span>
                   </div>
                   <StatusBadge status={appointment.status} />
+                  {rescheduleForm.appointmentId === appointment.id ? (
+                    <form className="reschedule-panel" onSubmit={submitReschedule}>
+                      <label htmlFor={`rescheduleDate-${appointment.id}`}>New Date</label>
+                      <input
+                        id={`rescheduleDate-${appointment.id}`}
+                        type="date"
+                        min={todayLocalDateString()}
+                        value={rescheduleForm.date}
+                        onChange={(event) => setRescheduleForm((previous) => ({ ...previous, date: event.target.value, time: '' }))}
+                        required
+                      />
+                      <div>
+                        <p className="field-label">New Slot</p>
+                        <div className="slot-grid compact-slot-grid">
+                          {rescheduleSlots.length === 0 ? <p className="slot-empty">No open slots for this date.</p> : null}
+                          {rescheduleSlots.map((slot) => {
+                            const value = String(slot)
+                            return <button key={value} type="button" className={rescheduleForm.time === value ? 'slot-button active' : 'slot-button'} onClick={() => setRescheduleForm((previous) => ({ ...previous, time: value }))}>{value.slice(0, 5)}</button>
+                          })}
+                        </div>
+                      </div>
+                      <div className="action-row compact">
+                        <button type="submit">Request Reschedule</button>
+                        <button type="button" className="secondary-button" onClick={cancelReschedule}>Close</button>
+                      </div>
+                    </form>
+                  ) : null}
                 </div>
-                {isClosed ? null : <button type="button" className="danger-button" onClick={() => void cancelAppointment(appointment.id)}>Cancel</button>}
+                {isClosed ? null : (
+                  <div className="action-row compact">
+                    <button type="button" className="secondary-button" onClick={() => startReschedule(appointment)}>Reschedule</button>
+                    <button type="button" className="danger-button" onClick={() => void cancelAppointment(appointment.id)}>Cancel</button>
+                  </div>
+                )}
               </div>
             )
           })}
@@ -586,6 +668,53 @@ export function WorkspaceView({
                     <p>Clinic unavailable for online booking</p>
                   </div>
                   <button type="button" className="danger-button" onClick={() => void removeBlockedDate(blockedDate.id)}>Remove</button>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="surface-card admin-card">
+            <SectionHeading
+              kicker="Services"
+              title="Manage clinic service catalog"
+              copy="Add services, update durations, and deactivate offerings that should no longer appear in booking."
+            />
+            <form className="form" onSubmit={submitAdminService}>
+              <label htmlFor="serviceName">Service Name</label>
+              <input id="serviceName" value={serviceForm.name} onChange={(event) => setServiceForm((previous) => ({ ...previous, name: event.target.value }))} required />
+
+              <label htmlFor="serviceDescription">Description</label>
+              <textarea id="serviceDescription" value={serviceForm.description} onChange={(event) => setServiceForm((previous) => ({ ...previous, description: event.target.value }))} required />
+
+              <label htmlFor="serviceDuration">Duration Minutes</label>
+              <input id="serviceDuration" type="number" min="5" value={serviceForm.durationMinutes} onChange={(event) => setServiceForm((previous) => ({ ...previous, durationMinutes: event.target.value }))} required />
+
+              <label className="checkbox-row">
+                <input type="checkbox" checked={serviceForm.active} onChange={(event) => setServiceForm((previous) => ({ ...previous, active: event.target.checked }))} />
+                Active
+              </label>
+
+              <div className="action-row">
+                <button type="submit">{editingServiceId ? 'Update Service' : 'Add Service'}</button>
+                {editingServiceId ? <button type="button" className="secondary-button" onClick={() => { setEditingServiceId(null); setServiceForm({ name: '', description: '', durationMinutes: 30, active: true }) }}>Cancel</button> : null}
+              </div>
+            </form>
+
+            <div className="stack-list top-gap">
+              {(adminServices || []).map((service) => (
+                <div key={service.id} className="list-row list-row-card">
+                  <div>
+                    <strong>{service.name}</strong>
+                    <p>{service.description}</p>
+                    <div className="meta-row">
+                      <span>{service.durationMinutes} min</span>
+                      <span>{service.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                  </div>
+                  <div className="action-row compact">
+                    <button type="button" className="secondary-button" onClick={() => editAdminService(service)}>Edit</button>
+                    {service.active ? <button type="button" className="danger-button" onClick={() => void deactivateAdminService(service.id)}>Deactivate</button> : null}
+                  </div>
                 </div>
               ))}
             </div>
