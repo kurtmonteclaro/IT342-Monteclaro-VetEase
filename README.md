@@ -1,122 +1,130 @@
 # VetEase
 
-VetEase is a veterinary reservation and scheduling platform where pet owners can book clinic appointments online while clinic staff manage schedules and bookings efficiently.
+VetEase is a veterinary reservation and clinic management platform for pet owners and clinic staff. Pet owners can register, sign in, manage pet profiles, browse services, request appointments, and track appointment status. Clinic staff can review booking requests, manage daily appointments, configure clinic availability, block dates, and maintain the service catalog.
 
-This repository currently implements **Phase 1 only**:
-- User Registration
-- User Login
+## Project Structure
 
-Future SDD features (pets, services, appointments, admin tools, OAuth, email, uploads, etc.) are intentionally out of scope for this phase.
+The project is organized around Vertical Slice Architecture, with code grouped by feature or module where practical.
 
-## Current Architecture
-- Backend: Spring Boot REST API (`backend/`)
-- Web Frontend: React + Vite SPA (`web/`)
-- Mobile: Android/Kotlin placeholder (`mobile/`)
-- Documentation: `docs/`
-
-## Phase 1 Features Implemented
-1. Registration (`POST /api/auth/register`)
-- Required fields: `name`, `email`, `password`
-- Validates input
-- Prevents duplicate email registration
-- Stores password using BCrypt hashing
-- Persists users in PostgreSQL (Supabase)
-
-2. Login (`POST /api/auth/login`)
-- Accepts `email` and `password`
-- Validates credentials from the database
-- Rejects invalid credentials
-- Returns success response for frontend dashboard access
-
-## API Contract (Phase 1)
-### Register
-`POST /api/auth/register`
-
-Request body:
-```json
-{
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "password": "Password123"
-}
+```text
+backend/   Spring Boot REST API
+web/       React + Vite frontend
+mobile/    Android/Kotlin application
+docs/      System design and testing documentation
 ```
 
-Success response (`201`):
-```json
-{
-  "id": 1,
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "message": "Registration successful"
-}
-```
+Key refactor documentation:
 
-### Login
-`POST /api/auth/login`
+- Test plan: `docs/testing/SOFTWARE_TEST_PLAN.md`
+- Regression report: `docs/testing/REGRESSION_TEST_REPORT.md`
 
-Request body:
-```json
-{
-  "email": "jane@example.com",
-  "password": "Password123"
-}
-```
+## Core Features
 
-Success response (`200`):
-```json
-{
-  "id": 1,
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "message": "Login successful"
-}
-```
+- Account registration and login
+- Google OAuth login
+- JWT-secured backend API
+- Pet profile management with photo upload
+- Clinic service catalog browsing and administration
+- Appointment availability lookup
+- Appointment booking, cancellation, and rescheduling
+- Admin appointment review, confirmation, cancellation, and completion
+- Clinic settings and blocked date management
+- External dog breed lookup
+- Web and Android client applications
 
-## Environment Setup
-Create/edit root `.env.local` (not committed to git) with your Supabase values:
+## Backend
 
-```env
-SUPABASE_DB_URL=jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
-SUPABASE_DB_USER=postgres.kxqdzuvdspvlpzjkgxvt
-SUPABASE_DB_PASSWORD=your-supabase-db-password
-SERVER_PORT=8080
-VITE_API_BASE_URL=http://localhost:8080
-```
+Location: `backend/`
 
-The VS Code run configuration reads values from `.env.local` via `.vscode/launch.json`.
-
-## Run Instructions
-### 1. Backend
 Requirements:
+
 - Java 17+
-- Maven Wrapper (already included)
+- Maven Wrapper, included in the repository
+- PostgreSQL database credentials
 
-Commands:
-```bash
-cd backend
-./mvnw spring-boot:run
-```
+Run:
 
-Windows PowerShell:
 ```powershell
-Set-Location backend
+cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-### 2. Web
+Test:
+
+```powershell
+cd backend
+.\mvnw.cmd test
+```
+
+## Web Frontend
+
+Location: `web/`
+
 Requirements:
+
 - Node.js 18+
 
-Commands:
-```bash
+Install and run:
+
+```powershell
 cd web
 npm install
 npm run dev
 ```
 
-Web app runs on `http://localhost:5173` and connects to backend via `VITE_API_BASE_URL`.
+Test and build:
 
-## Notes
-- Spring Boot 3 requires Java 17 or newer.
-- This phase does not yet include JWT, role management, appointments, or admin modules.
-- Keep commit history focused and feature-based (registration and login milestones).
+```powershell
+cd web
+npm run test
+npm run lint
+npm run build
+```
+
+The web app runs on `http://localhost:5173` by default.
+
+## Mobile App
+
+Location: `mobile/`
+
+Requirements:
+
+- Android Studio or Android SDK
+- Java compatible with the configured Gradle/Android plugin
+
+Run unit tests:
+
+```powershell
+cd mobile
+.\gradlew.bat test
+```
+
+The Android emulator uses `http://10.0.2.2:8080` to reach the local backend.
+
+## Environment Setup
+
+Create a root `.env.local` file for local-only configuration:
+
+```env
+SUPABASE_DB_URL=jdbc:postgresql://your-host:5432/postgres?sslmode=require
+SUPABASE_DB_USER=your-db-user
+SUPABASE_DB_PASSWORD=your-db-password
+SERVER_PORT=8080
+VITE_API_BASE_URL=http://localhost:8080
+GOOGLE_OAUTH_CLIENT_ID=your-google-client-id
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+Do not commit `.env.local`.
+
+## Regression Verification
+
+The latest vertical slice refactor was verified with:
+
+- `cd backend && .\mvnw.cmd test`
+- `cd web && npm run test`
+- `cd web && npm run lint`
+- `cd web && npm run build`
+- `cd mobile && .\gradlew.bat test`
+
+See `docs/testing/REGRESSION_TEST_REPORT.md` for the recorded results.
