@@ -43,4 +43,6 @@
     <string name="request_failed">Request failed. Please try again.</string>
     <string name="register_success">Registration successful. You can now log in.</string>
     <string name="backend_note">Android emulator uses 10.0.2.2 to reach your local backend.</string>
+    <string name="google_web_client_id">877831662242-e0u2jni2vjoqs0jtd761eg58r0jj7kmr.apps.googleusercontent.com</string>
+    <string name="continue_with_google">Continue with Google</string>
 </resources>

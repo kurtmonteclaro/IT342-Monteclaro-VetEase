@@ -73,7 +73,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
-                android:text="@string/email_address"
+                android:text="Username"
                 android:textColor="@color/vetease_text_primary"
                 android:textStyle="bold" />
 
@@ -83,8 +83,8 @@
                 android:layout_height="52dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_input"
-                android:hint="@string/email_hint"
-                android:inputType="textEmailAddress"
+                android:hint="Enter your username"
+                android:inputType="text"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textColor="@color/vetease_text_primary"
@@ -120,6 +120,22 @@
                 android:text="@string/login_to_vetease"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/buttonGoogle"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_input"
+                android:drawableStart="@drawable/ic_google_logo"
+                android:drawablePadding="10dp"
+                android:gravity="center_vertical"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:text="@string/continue_with_google"
+                android:textAllCaps="false"
+                android:textColor="@color/vetease_mid"
                 android:textStyle="bold" />
 
             <ProgressBar

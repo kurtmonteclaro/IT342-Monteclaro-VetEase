@@ -73,6 +73,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
+                android:text="Username"
+                android:textColor="@color/vetease_text_primary"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/editUsername"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input"
+                android:hint="Choose a username"
+                android:inputType="text"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="@color/vetease_text_primary"
+                android:textColorHint="@color/vetease_text_secondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
                 android:text="@string/full_name"
                 android:textColor="@color/vetease_text_primary"
                 android:textStyle="bold" />
@@ -132,6 +153,14 @@
                 android:textColor="@color/vetease_text_primary"
                 android:textColorHint="@color/vetease_text_secondary" />
 
+            <CheckBox
+                android:id="@+id/checkAdmin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Register as clinic admin"
+                android:textColor="@color/vetease_text_primary" />
+
             <Button
                 android:id="@+id/buttonSubmit"
                 android:layout_width="match_parent"
@@ -141,6 +170,22 @@
                 android:text="@string/create_account"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/buttonGoogle"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_input"
+                android:drawableStart="@drawable/ic_google_logo"
+                android:drawablePadding="10dp"
+                android:gravity="center_vertical"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:text="@string/continue_with_google"
+                android:textAllCaps="false"
+                android:textColor="@color/vetease_mid"
                 android:textStyle="bold" />
 
             <ProgressBar
