@@ -1,4 +1,4 @@
-package edu.cit.monteclaro.vetease.security;
+package edu.cit.monteclaro.vetease.auth.security;
 
 import edu.cit.monteclaro.vetease.auth.model.User;
 import edu.cit.monteclaro.vetease.auth.repository.UserRepository;

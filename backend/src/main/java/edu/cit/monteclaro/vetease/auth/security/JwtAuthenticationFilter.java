@@ -1,4 +1,4 @@
-package edu.cit.monteclaro.vetease.security;
+package edu.cit.monteclaro.vetease.auth.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -15,16 +15,16 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.VetEase">
         <activity
-            android:name=".RegisterActivity"
+            android:name=".features.auth.RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".features.auth.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".HomeActivity"
+            android:name=".features.home.HomeActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".features.launch.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

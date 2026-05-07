@@ -1,4 +1,4 @@
-package com.example.vetease
+package com.example.vetease.features.home
 
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -19,6 +19,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.vetease.R
+import com.example.vetease.core.api.VeteaseApi
+import com.example.vetease.core.session.SessionManager
+import com.example.vetease.features.auth.LoginActivity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
