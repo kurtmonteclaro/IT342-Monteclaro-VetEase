@@ -1,91 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { AdminTitleStrip, AuthForms, NavButtons, WorkspaceView } from './components/AppSections'
+import { API_BASE_URL, GOOGLE_CLIENT_ID } from './shared/api/config'
+import { clearStoredSession, loadStoredSession, saveStoredSession } from './shared/session/sessionStorage'
+import { CLIENT_ONLY_PATHS, NAVIGATION_CONFIG, PATH_TO_VIEW, VIEW_TO_PATH } from './shared/routing/workspaceRoutes'
+import {
+  INITIAL_BOOKING_FORM,
+  INITIAL_LOGIN_FORM,
+  INITIAL_PET_FORM,
+  INITIAL_REGISTER_FORM,
+  INITIAL_RESCHEDULE_FORM,
+  INITIAL_SERVICE_FORM,
+  INITIAL_SETTINGS_FORM,
+} from './features/workspace/formState'
+import { AdminTitleStrip, AuthForms, NavButtons, WorkspaceView } from './features/workspace/WorkspaceView'
 import './App.css'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-const SESSION_KEY = 'vetease-session'
-
-const INITIAL_REGISTER_FORM = {
-  username: '',
-  email: '',
-  password: '',
-  firstName: '',
-  lastName: '',
-  role: 'CLIENT',
-}
-
-const INITIAL_LOGIN_FORM = {
-  username: '',
-  password: '',
-}
-
-const INITIAL_PET_FORM = {
-  name: '',
-  species: '',
-  breed: '',
-  age: '',
-  notes: '',
-  vaccineHistory: '',
-}
-
-const INITIAL_BOOKING_FORM = {
-  petId: '',
-  serviceId: '',
-  date: '',
-  time: '',
-  notes: '',
-}
-
-const INITIAL_RESCHEDULE_FORM = {
-  appointmentId: null,
-  serviceId: '',
-  date: '',
-  time: '',
-}
-
-const INITIAL_SETTINGS_FORM = {
-  openingTime: '09:00',
-  closingTime: '17:00',
-  slotMinutes: 30,
-}
-
-const INITIAL_SERVICE_FORM = {
-  name: '',
-  description: '',
-  durationMinutes: 30,
-  active: true,
-}
-
-const NAVIGATION_CONFIG = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'pets', label: 'Pets' },
-  { key: 'services', label: 'Services' },
-  { key: 'book', label: 'Book' },
-  { key: 'appointments', label: 'Appointments' },
-  { key: 'admin', label: 'Admin' },
-]
-
-const VIEW_TO_PATH = {
-  dashboard: '/dashboard',
-  pets: '/pets',
-  services: '/services',
-  book: '/book',
-  appointments: '/appointments',
-  admin: '/admin',
-}
-
-const PATH_TO_VIEW = {
-  '/dashboard': 'dashboard',
-  '/pets': 'pets',
-  '/services': 'services',
-  '/book': 'book',
-  '/appointments': 'appointments',
-  '/admin': 'admin',
-}
-
-const CLIENT_ONLY_PATHS = ['/pets', '/services', '/book', '/appointments']
 
 function todayLocalDateString() {
   const d = new Date()
@@ -98,13 +26,7 @@ function todayLocalDateString() {
 function App() {
   const [registerForm, setRegisterForm] = useState(INITIAL_REGISTER_FORM)
   const [loginForm, setLoginForm] = useState(INITIAL_LOGIN_FORM)
-  const [session, setSession] = useState(() => {
-    try {
-      return JSON.parse(globalThis.localStorage.getItem(SESSION_KEY) || 'null')
-    } catch {
-      return null
-    }
-  })
+  const [session, setSession] = useState(loadStoredSession)
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -473,7 +395,7 @@ function App() {
     }
 
     setSession(nextSession)
-    globalThis.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
+    saveStoredSession(nextSession)
     navigate(payload.user?.role === 'ADMIN' ? '/admin' : '/dashboard', { replace: true })
   }
 
@@ -520,7 +442,7 @@ function App() {
   }
 
   const logout = () => {
-    globalThis.localStorage.removeItem(SESSION_KEY)
+    clearStoredSession()
     setSession(null)
     setPets([])
     setAppointments([])

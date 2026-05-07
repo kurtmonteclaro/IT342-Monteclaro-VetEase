@@ -13,7 +13,7 @@ import edu.cit.monteclaro.vetease.auth.repository.UserRepository;
 import edu.cit.monteclaro.vetease.common.ConflictException;
 import edu.cit.monteclaro.vetease.common.BadRequestException;
 import edu.cit.monteclaro.vetease.notification.EmailService;
-import edu.cit.monteclaro.vetease.security.JwtService;
+import edu.cit.monteclaro.vetease.auth.security.JwtService;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;

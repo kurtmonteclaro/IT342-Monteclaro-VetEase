@@ -1,6 +1,6 @@
 package edu.cit.monteclaro.vetease.config;
 
-import edu.cit.monteclaro.vetease.security.JwtAuthenticationFilter;
+import edu.cit.monteclaro.vetease.auth.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;

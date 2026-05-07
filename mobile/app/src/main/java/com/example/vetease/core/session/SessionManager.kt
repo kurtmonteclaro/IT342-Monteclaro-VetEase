@@ -1,4 +1,4 @@
-package com.example.vetease
+package com.example.vetease.core.session
 
 import android.content.Context
 import org.json.JSONObject

@@ -12,7 +12,7 @@ import edu.cit.monteclaro.vetease.auth.exception.EmailAlreadyRegisteredException
 import edu.cit.monteclaro.vetease.auth.exception.InvalidCredentialsException;
 import edu.cit.monteclaro.vetease.auth.model.UserRole;
 import edu.cit.monteclaro.vetease.auth.service.AuthService;
-import edu.cit.monteclaro.vetease.security.JwtAuthenticationFilter;
+import edu.cit.monteclaro.vetease.auth.security.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

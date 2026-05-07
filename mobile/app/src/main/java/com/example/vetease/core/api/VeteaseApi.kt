@@ -1,4 +1,4 @@
-package com.example.vetease
+package com.example.vetease.core.api
 
 import org.json.JSONArray
 import org.json.JSONObject

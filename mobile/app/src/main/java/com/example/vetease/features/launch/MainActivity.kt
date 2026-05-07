@@ -1,4 +1,4 @@
-package com.example.vetease
+package com.example.vetease.features.launch
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,6 +7,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.vetease.R
+import com.example.vetease.core.session.SessionManager
+import com.example.vetease.features.auth.LoginActivity
+import com.example.vetease.features.auth.RegisterActivity
+import com.example.vetease.features.home.HomeActivity
 
 class MainActivity : AppCompatActivity() {
 
