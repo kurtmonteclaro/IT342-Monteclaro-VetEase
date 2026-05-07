@@ -2,3 +2,10 @@
 .env.local
 web/.env.local
 .env
+
+# Local IDE settings
+.vscode/
+mobile/.idea/
+
+# Runtime uploads
+backend/uploads/
