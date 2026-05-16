@@ -1,70 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/registerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_page"
+    android:clipToPadding="false"
     android:fillViewport="true"
+    android:scrollbars="none"
     tools:context=".features.auth.RegisterActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingStart="@dimen/screen_padding_horizontal"
+        android:paddingTop="@dimen/screen_padding_vertical"
+        android:paddingEnd="@dimen/screen_padding_horizontal"
+        android:paddingBottom="@dimen/screen_padding_vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_auth_card"
             android:orientation="vertical"
-            android:padding="22dp">
+            android:padding="@dimen/card_padding">
 
             <TextView
                 android:id="@+id/textBackHome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:gravity="center_vertical"
+                android:paddingEnd="8dp"
                 android:text="@string/back_to_home"
                 android:textAllCaps="true"
-                android:textColor="@color/vetease_text_secondary"
-                android:textSize="11sp"
+                android:textColor="@color/vetease_mid"
+                android:textSize="@dimen/text_kicker"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="4dp"
                 android:text="@string/register"
                 android:textAllCaps="true"
                 android:textColor="@color/vetease_text_secondary"
-                android:textSize="11sp"
+                android:textSize="@dimen/text_kicker"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:fontFamily="serif"
                 android:text="@string/create_portal"
                 android:textColor="@color/vetease_text_primary"
-                android:textSize="30sp"
+                android:textSize="@dimen/text_title"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="8dp"
+                android:lineSpacingExtra="2dp"
                 android:text="@string/register_copy"
                 android:textColor="@color/vetease_text_secondary"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_body" />
 
             <TextView
                 android:id="@+id/textMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
+                android:lineSpacingExtra="2dp"
                 android:padding="14dp"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_body"
                 android:visibility="gone"
                 tools:text="Registration successful."
                 tools:visibility="visible" />
@@ -72,120 +83,138 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="14dp"
                 android:text="Username"
                 android:textColor="@color/vetease_text_primary"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/editUsername"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="8dp"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
                 android:hint="Choose a username"
+                android:imeOptions="actionNext"
                 android:inputType="text"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textColor="@color/vetease_text_primary"
-                android:textColorHint="@color/vetease_text_secondary" />
+                android:textColorHint="@color/vetease_text_secondary"
+                android:textSize="16sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="12dp"
                 android:text="@string/full_name"
                 android:textColor="@color/vetease_text_primary"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/editName"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="8dp"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
                 android:hint="@string/name_hint"
+                android:imeOptions="actionNext"
                 android:inputType="textPersonName"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textColor="@color/vetease_text_primary"
-                android:textColorHint="@color/vetease_text_secondary" />
+                android:textColorHint="@color/vetease_text_secondary"
+                android:textSize="16sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="12dp"
                 android:text="@string/email_address"
                 android:textColor="@color/vetease_text_primary"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/editEmail"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="8dp"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
                 android:hint="@string/email_hint"
+                android:imeOptions="actionNext"
                 android:inputType="textEmailAddress"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textColor="@color/vetease_text_primary"
-                android:textColorHint="@color/vetease_text_secondary" />
+                android:textColorHint="@color/vetease_text_secondary"
+                android:textSize="16sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="12dp"
                 android:text="@string/password"
                 android:textColor="@color/vetease_text_primary"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/editPassword"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="8dp"
+                android:layout_height="@dimen/input_height"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
                 android:hint="@string/password_hint"
+                android:imeOptions="actionDone"
                 android:inputType="textPassword"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textColor="@color/vetease_text_primary"
-                android:textColorHint="@color/vetease_text_secondary" />
+                android:textColorHint="@color/vetease_text_secondary"
+                android:textSize="16sp" />
 
             <CheckBox
                 android:id="@+id/checkAdmin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="10dp"
+                android:minHeight="44dp"
+                android:paddingStart="4dp"
                 android:text="Register as clinic admin"
-                android:textColor="@color/vetease_text_primary" />
+                android:textColor="@color/vetease_text_primary"
+                android:textSize="@dimen/text_body" />
 
             <Button
                 android:id="@+id/buttonSubmit"
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_marginTop="20dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="16dp"
                 android:background="@drawable/bg_primary_button"
                 android:text="@string/create_account"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <Button
                 android:id="@+id/buttonGoogle"
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_input"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_secondary_button"
+                android:backgroundTint="@null"
                 android:drawableStart="@drawable/ic_google_logo"
                 android:drawablePadding="10dp"
-                android:gravity="center_vertical"
+                android:gravity="center"
                 android:paddingStart="18dp"
                 android:paddingEnd="18dp"
                 android:text="@string/continue_with_google"
                 android:textAllCaps="false"
-                android:textColor="@color/vetease_mid"
+                android:textColor="@color/vetease_google_text"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <ProgressBar
@@ -194,17 +223,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 android:visibility="gone" />
 
             <TextView
                 android:id="@+id/textSwitchLogin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 android:gravity="center"
+                android:minHeight="44dp"
                 android:text="@string/already_have_account"
                 android:textColor="@color/vetease_mid"
+                android:textSize="@dimen/text_body"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

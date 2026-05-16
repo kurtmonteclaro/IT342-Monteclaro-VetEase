@@ -11,7 +11,9 @@ import android.widget.ImageView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
@@ -22,6 +24,7 @@ import androidx.core.content.ContextCompat
 import com.example.vetease.R
 import com.example.vetease.core.api.VeteaseApi
 import com.example.vetease.core.session.SessionManager
+import com.example.vetease.core.ui.applySystemBarPadding
 import com.example.vetease.features.auth.LoginActivity
 import org.json.JSONArray
 import org.json.JSONObject
@@ -52,6 +55,7 @@ class HomeActivity : AppCompatActivity() {
     private var activeView = "dashboard"
     private var selectedPetPhotoUri: Uri? = null
     private var petPhotoPreview: ImageView? = null
+    private val navButtons = linkedMapOf<String, Button>()
 
     private val petPhotoPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         selectedPetPhotoUri = uri
@@ -81,20 +85,30 @@ class HomeActivity : AppCompatActivity() {
 
     private fun buildShell() {
         val scrollView = ScrollView(this).apply {
+            id = View.generateViewId()
             setBackgroundResource(R.drawable.bg_page)
             isFillViewport = true
+            isVerticalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
         }
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(22), dp(18), dp(28))
+            setPadding(dp(16), dp(12), dp(16), dp(20))
         }
-        scrollView.addView(root)
+        scrollView.addView(
+            root,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
         setContentView(scrollView)
+        scrollView.applySystemBarPadding()
 
         val user = sessionManager.user
         root.addView(card().apply {
             addView(kicker(if (isAdmin()) "Clinic Ops" else "Client Portal"))
-            addView(title("VetEase Mobile"))
+            addView(title("VetEase"))
             addView(body("${user.optString("firstName")} ${user.optString("lastName")}".trim().ifBlank { user.optString("username") }))
             addView(body(user.optString("email")))
             addView(navRow())
@@ -109,7 +123,13 @@ class HomeActivity : AppCompatActivity() {
         messageView = TextView(this).apply {
             visibility = View.GONE
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            textSize = 14f
+            textSize = 15f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                setMargins(0, 0, 0, dp(10))
+            }
         }
         root.addView(messageView)
 
@@ -117,9 +137,11 @@ class HomeActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
         }
         root.addView(content)
+        updateNavHighlight()
     }
 
-    private fun navRow(): LinearLayout {
+    private fun navRow(): View {
+        navButtons.clear()
         val views = if (isAdmin()) {
             listOf("dashboard" to "Dashboard", "admin" to "Admin")
         } else {
@@ -128,33 +150,71 @@ class HomeActivity : AppCompatActivity() {
                 "pets" to "Pets",
                 "services" to "Services",
                 "book" to "Book",
-                "appointments" to "Appointments"
+                "appointments" to "Appointments",
             )
         }
 
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(12), 0, 0)
-            views.chunked(2).forEach { rowItems ->
-                addView(LinearLayout(this@HomeActivity).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    rowItems.forEach { (key, label) ->
-                        addView(secondaryButton(label) {
-                            activeView = key
-                            renderActiveView()
-                        }, LinearLayout.LayoutParams(0, dp(48), 1f).apply {
-                            setMargins(dp(3), dp(3), dp(3), dp(3))
-                        })
-                    }
-                })
-            }
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(10), 0, dp(4))
         }
+        views.forEach { (key, label) ->
+            val pill = navPill(label, key == activeView) {
+                activeView = key
+                renderActiveView()
+                updateNavHighlight()
+            }
+            navButtons[key] = pill
+            row.addView(
+                pill,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    dp(44),
+                ).apply {
+                    setMargins(0, 0, dp(8), 0)
+                },
+            )
+        }
+
+        return HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(row)
+        }
+    }
+
+    private fun updateNavHighlight() {
+        navButtons.forEach { (key, button) ->
+            styleNavPill(button, key == activeView)
+        }
+    }
+
+    private fun navPill(label: String, active: Boolean, onClick: () -> Unit): Button {
+        return Button(this).apply {
+            text = label
+            isAllCaps = false
+            textSize = 14f
+            minWidth = dp(96)
+            setPadding(dp(18), 0, dp(18), 0)
+            styleNavPill(this, active)
+            setOnClickListener { onClick() }
+        }
+    }
+
+    private fun styleNavPill(button: Button, active: Boolean) {
+        button.setBackgroundResource(if (active) R.drawable.bg_nav_pill_active else R.drawable.bg_nav_pill)
+        button.setTextColor(
+            ContextCompat.getColor(
+                this,
+                if (active) android.R.color.white else R.color.vetease_mid,
+            ),
+        )
     }
 
     private fun loadWorkspace() {
         clearMessage()
         content.removeAllViews()
-        content.addView(body("Loading workspace..."))
+        content.addView(loadingState("Loading workspace..."))
 
         thread {
             try {
@@ -182,6 +242,7 @@ class HomeActivity : AppCompatActivity() {
 
     private fun renderActiveView() {
         content.removeAllViews()
+        updateNavHighlight()
         when (activeView) {
             "pets" -> renderPets()
             "services" -> renderServices()
@@ -204,7 +265,7 @@ class HomeActivity : AppCompatActivity() {
             content.addView(card().apply {
                 addView(kicker("Next Appointment"))
                 if (next == null) {
-                    addView(body("No upcoming appointment yet."))
+                    addView(emptyState("No upcoming visit", "You do not have a pending or confirmed appointment yet."))
                     addView(primaryButton("Book Appointment") {
                         activeView = "book"
                         renderActiveView()
@@ -267,7 +328,7 @@ class HomeActivity : AppCompatActivity() {
         content.addView(card().apply {
             addView(kicker("Your Pets"))
             if (pets.length() == 0) {
-                addView(body("No pet profiles yet."))
+                addView(emptyState("No pets yet", "Add a pet profile above to start booking visits."))
             }
             forEach(pets) { pet ->
                 addView(petCard(pet))
@@ -298,7 +359,7 @@ class HomeActivity : AppCompatActivity() {
         content.addView(card().apply {
             addView(kicker("Clinic Services"))
             if (services.length() == 0) {
-                addView(body("No active services found."))
+                addView(emptyState("No services", "Clinic services will appear here when available."))
             }
             forEach(services) { service ->
                 addView(item(service.optString("name"), "${service.optString("description")} | ${service.optInt("durationMinutes")} min"))
@@ -312,7 +373,12 @@ class HomeActivity : AppCompatActivity() {
             addView(title("Request a clinic visit"))
 
             if (pets.length() == 0 || services.length() == 0) {
-                addView(body("Add a pet and make sure services are loaded before booking."))
+                addView(
+                    emptyState(
+                        "Booking unavailable",
+                        "Add a pet profile and wait for services to load before booking.",
+                    ),
+                )
                 return@apply
             }
 
@@ -351,7 +417,7 @@ class HomeActivity : AppCompatActivity() {
         content.addView(card().apply {
             addView(kicker("My Appointments"))
             if (appointments.length() == 0) {
-                addView(body("No appointments yet."))
+                addView(emptyState("No appointments", "Book a visit from the Book tab when you are ready."))
             }
             forEach(appointments) { appointment ->
                 val closed = appointment.optString("status") in listOf("COMPLETED", "CANCELLED")
@@ -384,7 +450,7 @@ class HomeActivity : AppCompatActivity() {
         content.addView(card().apply {
             addView(kicker("Pending Bookings"))
             if (pendingAppointments.length() == 0) {
-                addView(body("No pending requests."))
+                addView(emptyState("No pending requests", "New booking requests will show up here for approval."))
             }
             forEach(pendingAppointments) { appointment ->
                 addView(item(
@@ -403,7 +469,7 @@ class HomeActivity : AppCompatActivity() {
         content.addView(card().apply {
             addView(kicker("Today"))
             if (todayAppointments.length() == 0) {
-                addView(body("No appointments for today."))
+                addView(emptyState("Nothing scheduled today", "Today's confirmed visits will appear in this list."))
             }
             forEach(todayAppointments) { appointment ->
                 addView(item(
@@ -443,12 +509,10 @@ class HomeActivity : AppCompatActivity() {
             runOnUiThread {
                 panel.removeAllViews()
                 if (!result.success || slots.length() == 0) {
-                    panel.addView(body("No available slots for this date."))
+                    panel.addView(emptyState("No slots", "Try another date or service for availability."))
                     return@runOnUiThread
                 }
-                forEachValue(slots) { slot ->
-                    panel.addView(primaryButton(timeLabel(slot.toString())) { onSlot(slot.toString()) })
-                }
+                panel.addView(slotGrid(slots, onSlot))
             }
         }
     }
@@ -503,7 +567,15 @@ class HomeActivity : AppCompatActivity() {
         forEach(array) { item -> labels.add(item.optString(labelKey)) }
         return Spinner(this).apply {
             adapter = ArrayAdapter(this@HomeActivity, android.R.layout.simple_spinner_dropdown_item, labels)
-            setPadding(0, dp(6), 0, dp(10))
+            setPadding(dp(8), dp(10), dp(8), dp(10))
+            minimumHeight = dp(52)
+            background = ContextCompat.getDrawable(this@HomeActivity, R.drawable.bg_input)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                setMargins(0, dp(4), 0, dp(8))
+            }
         }
     }
 
@@ -520,10 +592,13 @@ class HomeActivity : AppCompatActivity() {
 
     private fun card(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(dp(18), dp(18), dp(18), dp(18))
+        setPadding(dp(16), dp(16), dp(16), dp(16))
         setBackgroundResource(R.drawable.bg_auth_card)
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            setMargins(0, 0, 0, dp(14))
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            setMargins(0, 0, 0, dp(12))
         }
     }
 
@@ -537,16 +612,77 @@ class HomeActivity : AppCompatActivity() {
     private fun title(textValue: String): TextView = TextView(this).apply {
         text = textValue
         setTextColor(ContextCompat.getColor(this@HomeActivity, R.color.vetease_text_primary))
-        textSize = 24f
+        textSize = 22f
         typeface = Typeface.DEFAULT_BOLD
-        setPadding(0, dp(6), 0, dp(6))
+        setPadding(0, dp(4), 0, dp(4))
     }
 
     private fun body(textValue: String): TextView = TextView(this).apply {
         text = textValue
         setTextColor(ContextCompat.getColor(this@HomeActivity, R.color.vetease_text_secondary))
-        textSize = 14f
-        setPadding(0, dp(4), 0, dp(8))
+        textSize = 15f
+        setLineSpacing(dp(2).toFloat(), 1f)
+        setPadding(0, dp(2), 0, dp(6))
+    }
+
+    private fun loadingState(message: String): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        setPadding(dp(16), dp(14), dp(16), dp(14))
+        setBackgroundResource(R.drawable.bg_empty_state)
+        addView(ProgressBar(this@HomeActivity))
+        addView(body(message).apply {
+            setPadding(dp(12), 0, 0, 0)
+        })
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            setMargins(0, 0, 0, dp(12))
+        }
+    }
+
+    private fun emptyState(titleValue: String, detail: String): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(16), dp(14), dp(16), dp(14))
+        setBackgroundResource(R.drawable.bg_empty_state)
+        addView(label(titleValue))
+        addView(body(detail).apply {
+            setPadding(0, dp(4), 0, 0)
+        })
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            setMargins(0, dp(4), 0, dp(8))
+        }
+    }
+
+    private fun slotGrid(slots: JSONArray, onSlot: (String) -> Unit): LinearLayout {
+        val grid = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(4), 0, dp(4))
+        }
+        val slotValues = mutableListOf<Any>()
+        forEachValue(slots) { slotValues.add(it) }
+        slotValues.chunked(2).forEach { rowSlots ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+            }
+            rowSlots.forEach { slot ->
+                row.addView(
+                    primaryButton(timeLabel(slot.toString())) { onSlot(slot.toString()) },
+                    LinearLayout.LayoutParams(0, dp(48), 1f).apply {
+                        setMargins(dp(4), dp(4), dp(4), dp(4))
+                    },
+                )
+            }
+            if (rowSlots.size == 1) {
+                row.addView(View(this), LinearLayout.LayoutParams(0, dp(48), 1f))
+            }
+            grid.addView(row)
+        }
+        return grid
     }
 
     private fun status(textValue: String): TextView = body(textValue).apply {
@@ -610,12 +746,8 @@ class HomeActivity : AppCompatActivity() {
             }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         })
 
-        addView(LinearLayout(this@HomeActivity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(10), 0, 0)
-            addView(secondaryButton("Delete") {
-                runMutation("Pet profile deleted.") { VeteaseApi.delete("/api/pets/${pet.optLong("id")}", sessionManager.token) }
-            }, LinearLayout.LayoutParams(0, dp(50), 1f))
+        addView(secondaryButton("Delete") {
+            runMutation("Pet profile deleted.") { VeteaseApi.delete("/api/pets/${pet.optLong("id")}", sessionManager.token) }
         })
     }
 
@@ -649,13 +781,18 @@ class HomeActivity : AppCompatActivity() {
     private fun input(hint: String, value: String = ""): EditText = EditText(this).apply {
         this.hint = hint
         setText(value)
-        setSingleLine(false)
+        setSingleLine(hint != "Notes" && hint != "Vaccine history")
+        textSize = 16f
         setBackgroundResource(R.drawable.bg_input)
         setTextColor(ContextCompat.getColor(this@HomeActivity, R.color.vetease_text_primary))
         setHintTextColor(ContextCompat.getColor(this@HomeActivity, R.color.vetease_text_secondary))
-        setPadding(dp(14), 0, dp(14), 0)
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(52)).apply {
-            setMargins(0, dp(8), 0, dp(8))
+        setPadding(dp(14), dp(12), dp(14), dp(12))
+        minimumHeight = dp(52)
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            setMargins(0, dp(6), 0, dp(6))
         }
     }
 
@@ -666,10 +803,15 @@ class HomeActivity : AppCompatActivity() {
     private fun button(textValue: String, primary: Boolean, onClick: () -> Unit): Button = Button(this).apply {
         text = textValue
         isAllCaps = false
+        textSize = 15f
+        minimumHeight = dp(52)
         setTextColor(ContextCompat.getColor(this@HomeActivity, if (primary) android.R.color.white else R.color.vetease_mid))
-        setBackgroundResource(if (primary) R.drawable.bg_primary_button else R.drawable.bg_input)
+        setBackgroundResource(if (primary) R.drawable.bg_primary_button else R.drawable.bg_secondary_button)
         setOnClickListener { onClick() }
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)).apply {
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
             setMargins(0, dp(6), 0, dp(6))
         }
     }

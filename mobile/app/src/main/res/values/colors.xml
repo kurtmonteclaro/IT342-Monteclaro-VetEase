@@ -11,6 +11,7 @@
     <color name="vetease_text_primary">#18312A</color>
     <color name="vetease_text_secondary">#5A7067</color>
     <color name="vetease_success">#2D6B46</color>
+    <color name="vetease_google_text">#0B6B3A</color>
     <color name="vetease_error">#8D3333</color>
     <color name="vetease_input_border">#D3DDD4</color>
     <color name="vetease_toggle_bg">#E8ECE5</color>

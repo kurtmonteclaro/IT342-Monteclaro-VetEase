@@ -5,9 +5,8 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.vetease.R
+import com.example.vetease.core.ui.applySystemBarPadding
 import com.example.vetease.core.session.SessionManager
 import com.example.vetease.features.auth.LoginActivity
 import com.example.vetease.features.auth.RegisterActivity
@@ -25,16 +24,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(
-                view.paddingLeft,
-                systemBars.top,
-                view.paddingRight,
-                systemBars.bottom
-            )
-            insets
-        }
+        findViewById<android.view.View>(R.id.main).applySystemBarPadding()
 
         findViewById<Button>(R.id.buttonLogin).setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))

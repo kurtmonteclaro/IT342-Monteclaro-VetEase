@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -17,6 +18,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.lifecycleScope
 import com.example.vetease.R
 import com.example.vetease.core.api.VeteaseApi
+import com.example.vetease.core.ui.applySystemBarPadding
 import com.example.vetease.core.session.SessionManager
 import com.example.vetease.features.home.HomeActivity
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
@@ -42,12 +44,15 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
+        findViewById<android.view.View>(R.id.loginRoot).applySystemBarPadding()
 
         textMessage = findViewById(R.id.textMessage)
         editUsername = findViewById(R.id.editEmail)
         editPassword = findViewById(R.id.editPassword)
         buttonSubmit = findViewById(R.id.buttonSubmit)
         buttonGoogle = findViewById(R.id.buttonGoogle)
+        buttonGoogle.setTextColor(ContextCompat.getColor(this, R.color.vetease_google_text))
+        ViewCompat.setBackgroundTintList(buttonGoogle, null)
         progressBar = findViewById(R.id.progressBar)
         textSwitch = findViewById(R.id.textSwitchRegister)
         buttonBackHome = findViewById(R.id.textBackHome)
